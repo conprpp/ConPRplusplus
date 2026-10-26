@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ConPR++ is a multi-site indoor-outdoor construction dataset for place recognition under progressive structural change.">
+  <meta name="description" content="ConPR++ file organization, LiDAR binary layout, timestamps, camera and IMU data, ground-truth poses, calibration, and Python reading examples.">
   <meta name="theme-color" content="#ffffff">
   <title>Data Format | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css">
+  <link rel="stylesheet" href="./assets/site.css?v=607de3b11c">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -25,9 +25,217 @@
     </nav>
   </div>
 </header>
-<main id="main" class="section-page">
-  <h1>Data Format</h1>
-  <hr class="section-rule">
+<main id="main" class="section-page content-page format-page">
+  <header class="page-intro">
+    <p class="eyebrow">Files, timestamps &amp; coordinate frames</p>
+    <h1>Data Format</h1>
+    <p class="page-lead">A practical guide to reading the LiDAR, RGB, IMU, and reference trajectories in ConPR++.</p>
+    <nav class="page-jumps" aria-label="On this page">
+      <a href="#directory">Directory structure</a><a href="#timestamps">Timestamps</a><a href="#sensor-files">Sensor files</a><a href="#poses">GT poses</a><a href="#calibration">Calibration</a><a href="#examples">Reading examples</a>
+    </nav>
+  </header>
+
+  <section id="directory" class="content-section" aria-labelledby="directory-title">
+    <h2 id="directory-title">Directory structure</h2>
+    <div class="format-layout">
+      <pre class="code-block directory-tree" aria-label="Dataset directory structure"><code>ConPRplusplus/
+├── README.md
+├── LICENSE
+├── sessions.csv
+├── Hall/
+│   ├── Calibration/
+│   │   ├── camera.yaml
+│   │   └── extrinsics.yaml
+│   ├── 260905/
+│   │   ├── LiDAR/&lt;time_ns&gt;.bin
+│   │   ├── Camera/&lt;time_ns&gt;.png
+│   │   ├── IMU/imu.csv
+│   │   ├── stamps.csv
+│   │   └── GT_pose/poses.csv
+│   └── ...
+├── Office/
+└── Quad/</code></pre>
+      <div>
+        <h3>One layout across three sites</h3>
+        <p>Hall, Office, and Quad follow the same structure. Each site has one <code>Calibration/</code> directory shared by all of its sessions.</p>
+        <p>Session folders use the local collection date in <strong>YYMMDD</strong> format. Identify a session by both its site and date: for example, <code>Hall/260905/</code>.</p>
+        <h3>Session metadata</h3>
+        <p><code>sessions.csv</code> lists the ISO collection date, day/night condition, duration, sensor and GT counts, and image dimensions. Collection dates use Asia/Seoul time.</p>
+        <p><code>duration_s</code> is the interval between the first and last released LiDAR message timestamps.</p>
+      </div>
+    </div>
+    <details class="technical-details" id="session-ids">
+      <summary>Session numbers and folder IDs</summary>
+      <p>The Sequences and Benchmark pages use chronological session numbers, such as 01 and 05. The corresponding folders use dates.</p>
+      <div class="session-id-grid" id="session-id-tables"><div><h3>Hall</h3><div class="table-wrap"><table class="data-table"><caption>Hall session numbers and folder IDs</caption><thead><tr><th scope="col">Session</th><th scope="col">Folder ID</th></tr></thead><tbody><tr><th scope="row">01</th><td><code>260905</code></td></tr><tr><th scope="row">02</th><td><code>260909</code></td></tr><tr><th scope="row">03</th><td><code>260914</code></td></tr><tr><th scope="row">04</th><td><code>260917</code></td></tr><tr><th scope="row">05</th><td><code>260922</code></td></tr></tbody></table></div></div>
+<div><h3>Office</h3><div class="table-wrap"><table class="data-table"><caption>Office session numbers and folder IDs</caption><thead><tr><th scope="col">Session</th><th scope="col">Folder ID</th></tr></thead><tbody><tr><th scope="row">01</th><td><code>230531</code></td></tr><tr><th scope="row">02</th><td><code>230609</code></td></tr><tr><th scope="row">03</th><td><code>230611</code></td></tr><tr><th scope="row">04</th><td><code>230623</code></td></tr><tr><th scope="row">05</th><td><code>230627</code></td></tr><tr><th scope="row">06</th><td><code>230628</code></td></tr><tr><th scope="row">07</th><td><code>230706</code></td></tr><tr><th scope="row">08</th><td><code>230717</code></td></tr><tr><th scope="row">09</th><td><code>230803</code></td></tr><tr><th scope="row">10</th><td><code>230809</code></td></tr><tr><th scope="row">11</th><td><code>230813</code></td></tr><tr><th scope="row">12</th><td><code>230818</code></td></tr></tbody></table></div></div>
+<div><h3>Quad</h3><div class="table-wrap"><table class="data-table"><caption>Quad session numbers and folder IDs</caption><thead><tr><th scope="col">Session</th><th scope="col">Folder ID</th></tr></thead><tbody><tr><th scope="row">01</th><td><code>260917</code></td></tr><tr><th scope="row">02</th><td><code>260918</code></td></tr><tr><th scope="row">03</th><td><code>260922</code></td></tr><tr><th scope="row">04</th><td><code>260929</code></td></tr><tr><th scope="row">05</th><td><code>261006</code></td></tr></tbody></table></div></div></div>
+    </details>
+  </section>
+
+  <section id="timestamps" class="content-section" aria-labelledby="timestamps-title">
+    <h2 id="timestamps-title">Timestamps &amp; event index</h2>
+    <p class="section-lead">Filenames and CSV records retain their original <strong>integer nanosecond timestamps</strong>. They are not rebased to the start of a session. No sensor clock offset is applied to the released timestamps.</p>
+    <div class="format-layout">
+      <div>
+        <h3><code>stamps.csv</code></h3>
+        <pre class="code-block"><code>timestamp_ns,sensor
+1788594404092761993,cam
+1788594404098888397,livox</code></pre>
+        <p>Events are ordered by timestamp, then by sensor name for ties. GT poses are stored separately and are not included in this index.</p>
+      </div>
+      <dl class="field-definitions">
+        <div><dt><code>cam</code></dt><dd>The timestamp-named PNG in <code>Camera/</code>.</dd></div>
+        <div><dt><code>livox</code></dt><dd>The timestamp-named BIN in <code>LiDAR/</code>.</dd></div>
+        <div><dt><code>imu</code></dt><dd>The row with the corresponding timestamp in <code>IMU/imu.csv</code>.</dd></div>
+      </dl>
+    </div>
+    <p class="format-callout"><strong>A playback index, not a list of synchronized pairs.</strong> Camera and LiDAR streams have independent timestamps and sample counts. Equal row numbers do not imply simultaneous observations. The <a class="inline-link" href="./benchmark.html#protocol">benchmark pairing rule</a> is applied separately.</p>
+  </section>
+
+  <section id="sensor-files" class="content-section" aria-labelledby="sensor-files-title">
+    <h2 id="sensor-files-title">Sensor files</h2>
+    <section class="format-subsection" aria-labelledby="lidar-title">
+      <div class="subsection-heading"><h3 id="lidar-title">LiDAR</h3><span class="file-label">LiDAR/&lt;time_ns&gt;.bin</span></div>
+      <p>Each BIN contains one original Livox Mid-70 message at a nominal 10 Hz. Coordinates are in metres in the LiDAR frame, with <strong>+x pointing forward</strong>. Retained scans are provided without deskewing, accumulation, gravity alignment, range cropping, or point reordering.</p>
+      <p><strong>Each point is a 19-byte packed, little-endian record</strong>, with no file header or alignment padding.</p>
+      <div class="table-wrap" role="region" aria-label="LiDAR binary record layout" tabindex="0">
+        <table class="data-table schema-table">
+          <caption>LiDAR point record: 19 bytes, little-endian</caption>
+          <thead><tr><th scope="col">Byte offset</th><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><th scope="row"><code>x</code></th><td>float32</td><td>x coordinate (m)</td></tr>
+            <tr><td>4</td><th scope="row"><code>y</code></th><td>float32</td><td>y coordinate (m)</td></tr>
+            <tr><td>8</td><th scope="row"><code>z</code></th><td>float32</td><td>z coordinate (m)</td></tr>
+            <tr><td>12</td><th scope="row"><code>reflectivity</code></th><td>uint8</td><td>Original Livox reflectivity</td></tr>
+            <tr><td>13</td><th scope="row"><code>tag</code></th><td>uint8</td><td>Original Livox tag</td></tr>
+            <tr><td>14</td><th scope="row"><code>line</code></th><td>uint8</td><td>Original Livox line</td></tr>
+            <tr><td>15</td><th scope="row"><code>offset_time_ns</code></th><td>uint32</td><td>Point time offset (ns)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="format-callout"><strong>This is not a float32 XYZI layout.</strong> Use the packed field definitions below when reading BIN files. In C++, verify the record size rather than assuming a native structure occupies 19 bytes.</p>
+      <div class="formula-line"><code>point_timestamp_ns = message_timestamp_ns + offset_time_ns</code></div>
+      <p>The filename gives the message timestamp, treated as a scan-start time in processing. Keep timestamps as integers to preserve nanosecond precision.</p>
+      <details class="technical-details"><summary>Point-time convention</summary><p>The addition above defines the dataset's point-time interpretation. It does not independently certify the hardware timestamp origin or camera exposure timing. The nominal recording rate is a guide; use recorded timestamps for timing.</p></details>
+    </section>
+    <section class="format-subsection" aria-labelledby="camera-title">
+      <div class="subsection-heading"><h3 id="camera-title">RGB camera</h3><span class="file-label">Camera/&lt;time_ns&gt;.png</span></div>
+      <p>Images are timestamp-named PNG files from the RealSense D435i. Faces and licence plates are mosaicked; image dimensions and timestamps are preserved.</p>
+      <div class="table-wrap" role="region" aria-label="Camera image formats" tabindex="0"><table class="data-table">
+        <caption>Camera image formats by site</caption><thead><tr><th scope="col">Site</th><th scope="col">Resolution</th><th scope="col">Nominal rate</th></tr></thead>
+        <tbody><tr><th scope="row">Hall / Quad</th><td>1280 × 720</td><td>10 Hz</td></tr><tr><th scope="row">Office</th><td>640 × 480</td><td>30 Hz</td></tr></tbody>
+      </table></div>
+      <p class="table-note">Images are not geometrically rectified for release. Use the site's camera model when rectification is needed. Libraries such as OpenCV may expose decoded pixels in BGR order.</p>
+    </section>
+    <section class="format-subsection" aria-labelledby="imu-title">
+      <div class="subsection-heading"><h3 id="imu-title">IMU</h3><span class="file-label">IMU/imu.csv</span></div>
+      <p>The IMU stream retains the recorded measurements and timestamps at a nominal 250 Hz. The CSV includes a header:</p>
+      <pre class="code-block"><code>timestamp_ns,qx,qy,qz,qw,wx,wy,wz,ax,ay,az</code></pre>
+      <dl class="field-definitions compact-definitions">
+        <div><dt><code>qx,qy,qz,qw</code></dt><dd>Recorded IMU orientation, in x,y,z,w order.</dd></div>
+        <div><dt><code>wx,wy,wz</code></dt><dd>Angular velocity in rad/s.</dd></div>
+        <div><dt><code>ax,ay,az</code></dt><dd>Acceleration in m/s², with the gravity contribution retained.</dd></div>
+      </dl>
+      <p>The recorded orientation is distinct from the optimized GT orientation and is not a direct transform to the site's world frame. No additional axis conversion, bias correction, or timestamp shift is applied during release.</p>
+    </section>
+  </section>
+
+  <section id="poses" class="content-section" aria-labelledby="poses-title">
+    <h2 id="poses-title">Ground-truth poses</h2>
+    <p><code>GT_pose/poses.csv</code> contains <strong>IMU poses only</strong>, expressed as <code>T_world_imu</code>. Each row maps IMU coordinates to the site's world frame.</p>
+    <pre class="code-block"><code>timestamp_ns,x,y,z,qx,qy,qz,qw</code></pre>
+    <div class="prose-columns">
+      <div><h3>Position &amp; orientation</h3><p>Position is in metres. Unit quaternions use x,y,z,w order. All sessions at a site share a world frame anchored to the first valid IMU pose of its first session: Hall 260905, Office 230531, and Quad 260917.</p><p>The three sites have independent world frames. Rotations used to display paper figures are not applied to the released poses or sensor data.</p></div>
+      <div><h3>Trajectory timestamps</h3><p>Rows are selected native scan-end samples. They are not poses at every raw IMU observation or at each LiDAR filename timestamp.</p><p>For intermediate times, interpolate position and use quaternion SLERP within supported intervals. Do not extrapolate beyond GT support. Sensor streams can extend outside the GT interval.</p></div>
+    </div>
+    <p>These optimized reference trajectories are estimated poses. See <a class="inline-link" href="./system.html#ground-truth">pose generation and geometric validation</a> for the method and its validation scope.</p>
+  </section>
+
+  <section id="calibration" class="content-section" aria-labelledby="calibration-title">
+    <h2 id="calibration-title">Calibration &amp; coordinate frames</h2>
+    <p>Camera intrinsics were calibrated using a checkerboard pattern. Extrinsic calibration was based on LI-Init and Kalibr.</p>
+    <p>Each site's <code>Calibration/</code> applies to all its sessions. Hall and Quad share calibration values; Office uses its own camera profile and extrinsics.</p>
+    <h3>Camera model</h3>
+    <p><code>camera.yaml</code> follows a ROS CameraInfo-style schema: image dimensions, camera matrix K, distortion model and coefficients, rectification matrix R, and projection matrix P.</p>
+    <div class="table-wrap" role="region" aria-label="Camera calibration models" tabindex="0"><table class="data-table schema-table">
+      <caption>Camera distortion models and coefficient ordering</caption><thead><tr><th scope="col">Site</th><th scope="col">Model</th><th scope="col">Coefficient order</th><th scope="col">Resolution</th></tr></thead>
+      <tbody><tr><th scope="row">Hall / Quad</th><td><code>plumb_bob</code></td><td>k1, k2, p1, p2, k3</td><td>1280 × 720</td></tr><tr><th scope="row">Office</th><td><code>equidistant</code></td><td>k1, k2, k3, k4</td><td>640 × 480</td></tr></tbody>
+    </table></div>
+    <h3 class="spaced-heading">Extrinsic transforms</h3>
+    <p><code>extrinsics.yaml</code> contains two homogeneous 4 × 4 matrices. Use homogeneous column vectors and translations in metres. Camera optical axes point right, down, and forward.</p>
+    <div class="transform-list">
+      <div><span>LiDAR → IMU</span><code>p_imu = T_imu_lidar @ p_lidar</code></div>
+      <div><span>LiDAR → camera</span><code>p_camera = T_camera_lidar @ p_lidar</code></div>
+      <div><span>IMU → camera</span><code>T_camera_imu = T_camera_lidar @ inverse(T_imu_lidar)</code></div>
+      <div><span>LiDAR → world, at a supported pose time</span><code>T_world_lidar = T_world_imu @ T_imu_lidar</code></div>
+    </div>
+    <p class="table-note">Spatial calibration specifies coordinate relationships; it does not imply that camera and LiDAR observations were recorded at exactly the same instant.</p>
+  </section>
+
+  <section id="examples" class="content-section" aria-labelledby="examples-title">
+    <h2 id="examples-title">Reading examples</h2>
+    <p>Minimal Python examples for the released file formats. Replace the session and filename with the data you want to read.</p>
+    <details class="technical-details" open><summary>Read a LiDAR scan with NumPy</summary>
+      <pre class="code-block"><code class="language-python" id="lidar-reader">from pathlib import Path
+import numpy as np
+
+point_dtype = np.dtype([
+    ("x", "&lt;f4"), ("y", "&lt;f4"), ("z", "&lt;f4"),
+    ("reflectivity", "u1"), ("tag", "u1"), ("line", "u1"),
+    ("offset_time_ns", "&lt;u4"),
+], align=False)
+assert point_dtype.itemsize == 19
+
+scan_path = Path("ConPRplusplus/Hall/260905/LiDAR/1788594404098888397.bin")
+if scan_path.stat().st_size % point_dtype.itemsize:
+    raise ValueError("File size is not a multiple of 19 bytes")
+
+points = np.fromfile(scan_path, dtype=point_dtype)
+xyz = np.column_stack([points["x"], points["y"], points["z"]])
+message_ns = np.uint64(int(scan_path.stem))
+point_ns = message_ns + points["offset_time_ns"].astype(np.uint64)</code></pre>
+    </details>
+    <details class="technical-details"><summary>Read CSV records without losing timestamp precision</summary>
+      <pre class="code-block"><code class="language-python" id="csv-reader">import csv
+from pathlib import Path
+
+session = Path("ConPRplusplus/Hall/260905")
+with (session / "stamps.csv").open(newline="") as f:
+    events = [(int(r["timestamp_ns"]), r["sensor"])
+              for r in csv.DictReader(f)]
+
+with (session / "GT_pose/poses.csv").open(newline="") as f:
+    poses = [
+        (int(r["timestamp_ns"]),
+         [float(r[k]) for k in ("x", "y", "z")],
+         [float(r[k]) for k in ("qx", "qy", "qz", "qw")])
+        for r in csv.DictReader(f)
+    ]
+
+# Keep timestamps separate from floating-point position/quaternion arrays.
+# IMU/imu.csv can be read with the same DictReader pattern.</code></pre>
+    </details>
+    <details class="technical-details"><summary>Transform LiDAR coordinates at a GT pose time</summary>
+      <p>This example uses NumPy. Supply the actual <code>T_imu_lidar</code> matrix from the site's calibration. The pose and point coordinates must refer to the same supported time; reading a BIN does not itself deskew a scan.</p>
+      <pre class="code-block"><code class="language-python" id="transform-reader">import numpy as np
+
+def lidar_to_world(xyz, position, quaternion_xyzw, T_imu_lidar):
+    q = np.asarray(quaternion_xyzw, dtype=float)
+    if q.shape != (4,) or not np.isfinite(q).all() or np.linalg.norm(q) == 0:
+        raise ValueError("Expected a finite, nonzero x,y,z,w quaternion")
+    x, y, z, w = q / np.linalg.norm(q)
+    T_world_imu = np.eye(4)
+    T_world_imu[:3, :3] = [
+        [1-2*(y*y+z*z), 2*(x*y-z*w), 2*(x*z+y*w)],
+        [2*(x*y+z*w), 1-2*(x*x+z*z), 2*(y*z-x*w)],
+        [2*(x*z-y*w), 2*(y*z+x*w), 1-2*(x*x+y*y)],
+    ]
+    T_world_imu[:3, 3] = position
+    T_world_lidar = T_world_imu @ np.asarray(T_imu_lidar)
+    return xyz @ T_world_lidar[:3, :3].T + T_world_lidar[:3, 3]</code></pre>
+    </details>
+  </section>
 </main>
 <footer class="site-footer"><span>ConPR++</span><span>Place recognition in changing construction environments</span></footer>
 </body>

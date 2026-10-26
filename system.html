@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff">
   <title>System | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css">
+  <link rel="stylesheet" href="./assets/site.css?v=607de3b11c">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -72,7 +72,7 @@
     <section class="spatial-calibration" aria-labelledby="spatial-title">
         <h3 id="spatial-title">Spatial calibration</h3>
         <p>Calibration was performed separately for Office and for the later Hall and Quad recordings. RGB camera intrinsics were estimated using a checkerboard, with mean reprojection errors of <strong>0.22 pixels for Office</strong> and <strong>0.32 pixels for Hall and Quad</strong>.</p>
-        <p>Extrinsic calibration was performed between the LiDAR and IMU, and between the camera and IMU.</p>
+        <p>Extrinsic calibration was based on LI-Init and Kalibr.</p>
         <p>Both examples below qualitatively verify the camera–LiDAR extrinsics used for Hall and Quad.</p>
     <div class="figure-pair calibration-pair">
       <figure class="content-figure">
@@ -87,7 +87,7 @@
     </section>
     <section class="temporal-calibration" aria-labelledby="temporal-title">
       <h3 id="temporal-title">Temporal alignment</h3>
-      <p>All sensor measurements were timestamped at the host PC. Estimated temporal offsets were applied to align the sensor streams.</p>
+      <p>All sensor measurements were timestamped at the host PC. Released files preserve their original timestamps without sensor clock-offset correction. For place-recognition evaluation, each LiDAR scan is paired with its nearest camera image within 100 ms. See the <a class="inline-link" href="./data-format.html#timestamps">timestamp format</a> and <a class="inline-link" href="./benchmark.html#protocol">evaluation protocol</a> for details.</p>
     </section>
   </section>
 
