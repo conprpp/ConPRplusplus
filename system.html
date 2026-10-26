@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ConPR++ is a multi-site indoor-outdoor construction dataset for place recognition under progressive structural change.">
+  <meta name="description" content="The ConPR++ handheld sensor system: camera, LiDAR, IMU, calibration, and ground-truth pose generation.">
   <meta name="theme-color" content="#ffffff">
   <title>System | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
@@ -25,9 +25,104 @@
     </nav>
   </div>
 </header>
-<main id="main" class="section-page">
-  <h1>System</h1>
-  <hr class="section-rule">
+<main id="main" class="section-page content-page">
+  <header class="page-intro">
+    <p class="eyebrow">Acquisition &amp; reference poses</p>
+    <h1>The ConPR++ System</h1>
+    <p class="page-lead">A handheld camera–LiDAR–IMU system for recording indoor and outdoor construction environments.</p>
+    <nav class="page-jumps" aria-label="On this page">
+      <a href="#sensors">Sensor configuration</a><a href="#calibration">Calibration</a><a href="#ground-truth">Ground-truth poses</a>
+    </nav>
+  </header>
+
+  <section id="sensors" class="content-section" aria-labelledby="sensors-title">
+    <div class="split-section">
+      <div>
+        <h2 id="sensors-title">Sensor configuration</h2>
+        <p>The handheld platform combines a monocular RGB camera, a solid-state 3D LiDAR, an IMU, and a host PC. Its portable form enables data collection along indoor corridors, outdoor paths, and stairs near active construction sites.</p>
+        <p>The IMU supports LiDAR-inertial odometry. The camera and LiDAR capture the appearance and geometry of the same evolving environments.</p>
+      </div>
+      <figure class="content-figure rig-figure">
+        <a href="./assets/images/system/sensor-rig.png" target="_blank" rel="noopener" aria-label="Enlarge the sensor configuration figure">
+          <img src="./assets/images/system/sensor-rig.png" width="1314" height="516" alt="Handheld system with labeled Livox Mid-70 LiDAR, RGB camera, IMU, and host PC, alongside a view of the system held by an operator.">
+        </a>
+        <figcaption>The sensor arrangement and handheld acquisition platform.</figcaption>
+      </figure>
+    </div>
+    <div class="table-wrap" role="region" aria-label="Sensor specifications" tabindex="0">
+      <table class="data-table sensor-table">
+        <caption>Sensor specifications</caption>
+        <thead><tr><th scope="col">Sensor</th><th scope="col">Model</th><th scope="col">Measurements</th><th scope="col">Rate</th></tr></thead>
+        <tbody>
+          <tr>
+            <th scope="row">Camera</th>
+            <td>RealSense D435i</td>
+            <td><span class="cell-line">RGB · 1280 × 720 <span class="cell-note">Hall &amp; Quad</span></span><span class="cell-line">RGB · 640 × 480 <span class="cell-note">Office</span></span></td>
+            <td><span class="cell-line">10 Hz</span><span class="cell-line">30 Hz</span></td>
+          </tr>
+          <tr><th scope="row">LiDAR</th><td>Livox Mid-70</td><td>3D point clouds</td><td>10 Hz</td></tr>
+          <tr><th scope="row">IMU</th><td>3DM-GX5-AHRS</td><td>Attitude, angular velocity &amp; linear acceleration</td><td>250 Hz</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="calibration" class="content-section" aria-labelledby="calibration-title">
+    <h2 id="calibration-title">Sensor calibration</h2>
+    <div class="prose-columns">
+      <div>
+        <h3>Spatial calibration</h3>
+        <p>Calibration was performed separately for Office and for the later Hall and Quad recordings. RGB camera intrinsics were estimated using a checkerboard, with mean reprojection errors of <strong>0.22 pixels for Office</strong> and <strong>0.32 pixels for Hall and Quad</strong>.</p>
+        <p>Extrinsic calibration was performed between the LiDAR and IMU, and between the camera and IMU.</p>
+      </div>
+      <div>
+        <h3>Temporal alignment</h3>
+        <p>All sensor measurements were timestamped at the host PC. Estimated temporal offsets were applied to align the sensor streams.</p>
+        <p>The examples below qualitatively verify the camera–LiDAR calibration used for Hall and Quad through image projection and an image-colored point cloud.</p>
+      </div>
+    </div>
+    <div class="figure-pair calibration-pair">
+      <figure class="content-figure">
+        <a href="./assets/images/system/camera-overlay.png" target="_blank" rel="noopener" aria-label="Enlarge the LiDAR projection example"><img src="./assets/images/system/camera-overlay.png" width="1500" height="633" loading="lazy" alt="LiDAR points projected onto a camera image of the Hall interior."></a>
+        <figcaption><strong>LiDAR projection.</strong> Geometric measurements overlaid on the camera image.</figcaption>
+      </figure>
+      <figure class="content-figure">
+        <a href="./assets/images/system/colored-pointcloud.png" target="_blank" rel="noopener" aria-label="Enlarge the image-colored point cloud"><img src="./assets/images/system/colored-pointcloud.png" width="1500" height="633" loading="lazy" alt="Hall point cloud colored using the aligned RGB image."></a>
+        <figcaption><strong>Image-colored point cloud.</strong> RGB appearance mapped onto the LiDAR geometry.</figcaption>
+      </figure>
+    </div>
+    <p class="figure-note">Accumulated scans are used here for visualization; place-recognition inputs use individual LiDAR scans.</p>
+  </section>
+
+  <section id="ground-truth" class="content-section" aria-labelledby="gt-title">
+    <h2 id="gt-title">Ground-truth pose generation</h2>
+    <p class="section-lead">Reference poses combine LiDAR-inertial mapping, anchoring to stable structures, and trajectory refinement. All sessions within each site share a common coordinate frame.</p>
+    <ol class="process-list">
+      <li><span class="step-number">01</span><h3>Session mapping</h3><p>Process each recording independently with Voxel-SLAM.</p></li>
+      <li><span class="step-number">02</span><h3>Map anchoring</h3><p>Register local submaps to stable structures in a reference map.</p></li>
+      <li><span class="step-number">03</span><h3>Trajectory optimization</h3><p>Combine consistent anchor constraints with SLAM relative-motion constraints.</p></li>
+      <li><span class="step-number">04</span><h3>Multi-view refinement</h3><p>Apply additional refinement where it improves geometric consistency.</p></li>
+    </ol>
+    <div class="reference-sources">
+      <p><strong>Hall &amp; Office</strong><span>Leica terrestrial laser scanning (TLS) reference maps.</span></p>
+      <p><strong>Quad</strong><span>A separate dense reference map acquired with the same sensor system.</span></p>
+    </div>
+    <div class="figure-pair gt-pair">
+      <figure class="content-figure">
+        <a href="./assets/images/system/gt-baseline.png" target="_blank" rel="noopener" aria-label="Enlarge the FAST-LIO2 Hall reconstruction"><img src="./assets/images/system/gt-baseline.png" width="1073" height="1200" loading="lazy" alt="Hall map reconstructed using FAST-LIO2, with an orange trajectory and duplicated wall structures."></a>
+        <figcaption><strong>FAST-LIO2</strong></figcaption>
+      </figure>
+      <figure class="content-figure">
+        <a href="./assets/images/system/gt-refined.png" target="_blank" rel="noopener" aria-label="Enlarge the refined Hall reconstruction"><img src="./assets/images/system/gt-refined.png" width="1073" height="1200" loading="lazy" alt="Hall map from the ground-truth pose pipeline, showing sharper walls, an orange trajectory, and the TLS anchoring region in teal."></a>
+        <figcaption><strong>ConPR++ GT pipeline</strong></figcaption>
+      </figure>
+    </div>
+    <p class="figure-note">Hall reconstruction comparison. Orange lines show the trajectories; teal points and the dashed boundary mark the TLS reference map and anchoring region in the refined result.</p>
+    <details class="technical-details">
+      <summary>Reference-pose validation</summary>
+      <p>External tracking was infeasible at the active construction sites, so the optimized trajectories serve as reference poses. Validation against held-out stable surfaces yields a median point-to-plane residual below 3 cm at every site. This is a geometric consistency measure against reference surfaces, rather than an independently measured absolute pose error.</p>
+    </details>
+  </section>
 </main>
 <footer class="site-footer"><span>ConPR++</span><span>Place recognition in changing construction environments</span></footer>
 </body>
