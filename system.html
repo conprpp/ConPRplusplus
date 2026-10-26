@@ -39,12 +39,12 @@
     <div class="split-section">
       <div>
         <h2 id="sensors-title">Sensor configuration</h2>
-        <p>The handheld platform combines a monocular RGB camera, a solid-state 3D LiDAR, an IMU, and a host PC. Its portable form enables data collection along indoor corridors, outdoor paths, and stairs near active construction sites.</p>
+        <p>The handheld platform combines a monocular RGB camera, a <strong>Livox Mid-70 solid-state LiDAR</strong>, an IMU, and a host PC. The LiDAR has a <strong>70.4° circular field of view</strong>. The portable platform enables data collection along indoor corridors, outdoor paths, and stairs near active construction sites.</p>
         <p>The IMU supports LiDAR-inertial odometry. The camera and LiDAR capture the appearance and geometry of the same evolving environments.</p>
       </div>
       <figure class="content-figure rig-figure">
-        <a href="./assets/images/system/sensor-rig.png" target="_blank" rel="noopener" aria-label="Enlarge the sensor configuration figure">
-          <img src="./assets/images/system/sensor-rig.png" width="1314" height="516" alt="Handheld system with labeled Livox Mid-70 LiDAR, RGB camera, IMU, and host PC, alongside a view of the system held by an operator.">
+        <a href="./assets/images/system/sensor-rig.png" target="_blank" rel="noopener" aria-label="Enlarge the sensor configuration image">
+          <img src="./assets/images/system/sensor-rig.png" width="1800" height="718" alt="Handheld system with labeled Livox Mid-70 LiDAR, RGB camera, IMU, and host PC, alongside a view of the system held by an operator.">
         </a>
         <figcaption>The sensor arrangement and handheld acquisition platform.</figcaption>
       </figure>
@@ -60,7 +60,7 @@
             <td><span class="cell-line">RGB · 1280 × 720 <span class="cell-note">Hall &amp; Quad</span></span><span class="cell-line">RGB · 640 × 480 <span class="cell-note">Office</span></span></td>
             <td><span class="cell-line">10 Hz</span><span class="cell-line">30 Hz</span></td>
           </tr>
-          <tr><th scope="row">LiDAR</th><td>Livox Mid-70</td><td>3D point clouds</td><td>10 Hz</td></tr>
+          <tr><th scope="row">LiDAR</th><td><a class="inline-link" href="https://www.livoxtech.com/mid-70/specs" target="_blank" rel="noopener noreferrer">Livox Mid-70</a></td><td><span class="cell-line">Solid-state 3D LiDAR</span><span class="cell-line">70.4° circular FOV</span></td><td>10 Hz</td></tr>
           <tr><th scope="row">IMU</th><td>3DM-GX5-AHRS</td><td>Attitude, angular velocity &amp; linear acceleration</td><td>250 Hz</td></tr>
         </tbody>
       </table>
@@ -69,18 +69,11 @@
 
   <section id="calibration" class="content-section" aria-labelledby="calibration-title">
     <h2 id="calibration-title">Sensor calibration</h2>
-    <div class="prose-columns">
-      <div>
-        <h3>Spatial calibration</h3>
+    <section class="spatial-calibration" aria-labelledby="spatial-title">
+        <h3 id="spatial-title">Spatial calibration</h3>
         <p>Calibration was performed separately for Office and for the later Hall and Quad recordings. RGB camera intrinsics were estimated using a checkerboard, with mean reprojection errors of <strong>0.22 pixels for Office</strong> and <strong>0.32 pixels for Hall and Quad</strong>.</p>
         <p>Extrinsic calibration was performed between the LiDAR and IMU, and between the camera and IMU.</p>
-      </div>
-      <div>
-        <h3>Temporal alignment</h3>
-        <p>All sensor measurements were timestamped at the host PC. Estimated temporal offsets were applied to align the sensor streams.</p>
-        <p>The examples below qualitatively verify the camera–LiDAR calibration used for Hall and Quad through image projection and an image-colored point cloud.</p>
-      </div>
-    </div>
+        <p>Both examples below qualitatively verify the camera–LiDAR extrinsics used for Hall and Quad.</p>
     <div class="figure-pair calibration-pair">
       <figure class="content-figure">
         <a href="./assets/images/system/camera-overlay.png" target="_blank" rel="noopener" aria-label="Enlarge the LiDAR projection example"><img src="./assets/images/system/camera-overlay.png" width="1500" height="633" loading="lazy" alt="LiDAR points projected onto a camera image of the Hall interior."></a>
@@ -91,7 +84,11 @@
         <figcaption><strong>Image-colored point cloud.</strong> RGB appearance mapped onto the LiDAR geometry.</figcaption>
       </figure>
     </div>
-    <p class="figure-note">Accumulated scans are used here for visualization; place-recognition inputs use individual LiDAR scans.</p>
+    </section>
+    <section class="temporal-calibration" aria-labelledby="temporal-title">
+      <h3 id="temporal-title">Temporal alignment</h3>
+      <p>All sensor measurements were timestamped at the host PC. Estimated temporal offsets were applied to align the sensor streams.</p>
+    </section>
   </section>
 
   <section id="ground-truth" class="content-section" aria-labelledby="gt-title">
@@ -118,9 +115,28 @@
       </figure>
     </div>
     <p class="figure-note">Hall reconstruction comparison. Orange lines show the trajectories; teal points and the dashed boundary mark the TLS reference map and anchoring region in the refined result.</p>
-    <details class="technical-details">
+    <details id="reference-validation" class="technical-details">
       <summary>Reference-pose validation</summary>
       <p>External tracking was infeasible at the active construction sites, so the optimized trajectories serve as reference poses. Validation against held-out stable surfaces yields a median point-to-plane residual below 3 cm at every site. This is a geometric consistency measure against reference surfaces, rather than an independently measured absolute pose error.</p>
+      <div class="table-wrap" role="region" aria-label="Geometric consistency on held-out surfaces" tabindex="0">
+        <table class="data-table validation-table">
+          <caption>Table 8. Geometric consistency on held-out surfaces across the three sites.</caption>
+          <thead><tr><th scope="col">Site</th><th scope="col">Method</th><th scope="col" class="numeric">Residual ↓ (mm)</th><th scope="col" class="numeric">Coverage ↑ (%)</th></tr></thead>
+          <tbody>
+            <tr><th scope="rowgroup" rowspan="2">Hall</th><th scope="row">FAST-LIO2</th><td class="numeric">34.15</td><td class="numeric">70.14</td></tr>
+            <tr class="ours-row"><th scope="row">Ours</th><td class="numeric">19.94</td><td class="numeric">75.77</td></tr>
+          </tbody>
+          <tbody>
+            <tr><th scope="rowgroup" rowspan="2">Office</th><th scope="row">FAST-LIO2</th><td class="numeric">29.77</td><td class="numeric">65.92</td></tr>
+            <tr class="ours-row"><th scope="row">Ours</th><td class="numeric">29.55</td><td class="numeric">73.64</td></tr>
+          </tbody>
+          <tbody>
+            <tr><th scope="rowgroup" rowspan="2">Quad</th><th scope="row">FAST-LIO2</th><td class="numeric">33.54</td><td class="numeric">52.85</td></tr>
+            <tr class="ours-row"><th scope="row">Ours</th><td class="numeric">11.98</td><td class="numeric">56.13</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Residual:</strong> the median, across valid frames, of each frame’s median absolute point-to-plane residual on held-out static surfaces. <strong>Coverage:</strong> the fraction of selected evaluation points matched to the reference map within 0.2 m.</p>
     </details>
   </section>
 </main>
