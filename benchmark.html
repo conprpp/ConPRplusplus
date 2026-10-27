@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#ffffff">
   <title>Benchmark | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css?v=607de3b11c">
+  <link rel="stylesheet" href="./assets/site.css?v=d55bbcade0">
   <script src="./assets/benchmark-data.js?v=fdeed2bd16" defer></script>
-  <script src="./assets/benchmark.js?v=9e8f6eb60f" defer></script>
+  <script src="./assets/benchmark.js?v=2207ec12f4" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -31,15 +31,12 @@
   <header class="page-intro">
     <p class="eyebrow">Place recognition under structural change</p>
     <h1>Benchmark</h1>
-    <p class="page-lead">A common evaluation of LiDAR, visual, and multi-sensor fusion methods across evolving construction sites.</p>
-    <nav class="page-jumps" aria-label="On this page">
-      <a href="#protocol">Protocol</a><a href="#metrics">Labels &amp; metrics</a><a href="#results">Results</a><a href="#pr-curves">PR curves</a><a href="#cross-modality">Cross-modality</a><a href="#qualitative">Retrieval examples</a><a href="#temporal-change">Temporal change</a>
-    </nav>
-    <dl class="dataset-totals benchmark-totals"><div><dt>Construction sites</dt><dd>3</dd></div><div><dt>Baseline methods</dt><dd>12</dd></div><div><dt>Database–query session pairs</dt><dd>19</dd></div></dl>
+    <p class="page-lead">LiDAR, visual, and multi-sensor fusion place recognition across evolving construction sites.</p>
+    <nav class="page-jumps" aria-label="On this page"><a href="#protocol">Evaluation protocol</a><a href="#results">Benchmark results</a><a href="#cross-modality">Cross-modality analysis</a></nav>
   </header>
-
   <section id="protocol" class="content-section" aria-labelledby="protocol-title">
     <h2 id="protocol-title">Evaluation protocol</h2>
+    <h3>Session pairing and evaluation workflow</h3>
     <p class="section-lead">The latest session at each site is the query set. Each earlier session is evaluated as a separate database, using identical samples and ground-truth labels across methods.</p>
     <div class="protocol-sites">
       <div><h3>Hall</h3><p class="pair-direction">01–04 <span>→</span> 05</p><p>4 session pairs · 1 m sampling</p></div>
@@ -52,13 +49,23 @@
       <li><span class="step-number">03</span><h3>Extract features</h3><p>Use pretrained weights without fine-tuning on ConPR++.</p></li>
       <li><span class="step-number">04</span><h3>Search the database</h3><p>Retrieve from the entire sampled database for each session pair.</p></li>
     </ol>
-    <details class="technical-details"><summary>Sampling and common input preprocessing</summary>
-      <p>Keyframes are greedily selected along the full trajectory using displacement from the last selected pose, then restricted to the construction region. Each session is sampled once and reused in its database or query role. No appearance or blur filtering is applied.</p>
-      <p>Inputs are individual LiDAR scans, without accumulation, deskewing, or gravity alignment. Common benchmark preprocessing removes non-finite coordinates and points below 0.3 m range, followed by each baseline's own preprocessing. These evaluation operations are separate from the <a class="inline-link" href="./data-format.html#sensor-files">released sensor-file format</a>.</p>
-      <p>GT and IMU measurements are not used to correct the model's single-scan input. Labels use the scan-end GT LiDAR pose. The nominal FOV range used for labels is not a shared model-input range crop.</p>
-    </details>
-    <details class="technical-details"><summary>Baseline configurations</summary>
-      <p>These methods differ in architecture and pretraining data. UniMPR's three modes use the same pretrained checkpoint with its official missing-modality handling.</p>
+    <div class="protocol-block" id="positive-pairs">
+      <h3>Positive pairs</h3>
+    <p>A query–database pair is positive only when <strong>both</strong> conditions hold:</p>
+    <div class="positive-rule">
+      <div><span class="rule-label">GT positional distance</span><strong>≤ 2 m <small>Hall</small></strong><strong>≤ 7.5 m <small>Office / Quad</small></strong></div>
+      <span class="rule-operator">AND</span>
+      <div><span class="rule-label">Nominal FOV Dice overlap</span><strong>≥ 0.3</strong><span>70.4° circular FOV · 0.3–10 m range</span></div>
+    </div>
+
+    </div>
+    <div class="protocol-block" id="change-definition">
+      <h3>Visually Grounded Temporal Change Ratio</h3>
+      <p>TCR<sub>VG</sub> quantifies structural and appearance changes between sessions. Geometric changes are identified first; DINOv2 features measure appearance differences in matched regions. The final score averages both comparison directions.</p>
+      <figure class="content-figure tcr-definition-figure"><a href="./assets/images/benchmark/tcr-vg-definition.png" target="_blank" rel="noopener" aria-label="Enlarge: TCR_VG combines geometric and appearance change and averages both session directions"><img class="" src="./assets/images/benchmark/tcr-vg-definition.png" width="1800" height="748" loading="lazy" alt="TCR_VG combines geometric and appearance change and averages both session directions"></a></figure>
+    </div>
+    <details class="technical-details baseline-details" id="baseline-configurations">
+      <summary><h3>Baseline configurations</h3></summary>
       <div class="table-wrap" role="region" aria-label="Baseline configurations" tabindex="0"><table class="data-table configuration-table">
         <caption>Baseline configurations; image and BEV dimensions are height × width</caption>
         <thead><tr><th scope="col">Method</th><th scope="col">Modality</th><th scope="col">Weights</th><th scope="col">Input</th><th scope="col">Retrieval</th></tr></thead>
@@ -75,115 +82,971 @@
           <tr><th scope="row">UMF</th><td>Fusion</td><td>Oxford</td><td>4,096 points; RGB 240 × 320</td><td>Global + reranking</td></tr>
         </tbody>
       </table></div>
-      <p>SALAD+CASSPR averages the two cosine similarities with equal weight. UMF verifies the top 25 global candidates using image and point-cloud correspondences. Image and BEV sizes above are height × width.</p>
-    </details>
-  </section>
-
-  <section id="metrics" class="content-section" aria-labelledby="metrics-title">
-    <h2 id="metrics-title">Ground-truth labels &amp; metrics</h2>
-    <p>A query–database pair is positive only when <strong>both</strong> conditions hold:</p>
-    <div class="positive-rule">
-      <div><span class="rule-label">GT positional distance</span><strong>≤ 2 m <small>Hall</small></strong><strong>≤ 7.5 m <small>Office / Quad</small></strong></div>
-      <span class="rule-operator">AND</span>
-      <div><span class="rule-label">Nominal FOV Dice overlap</span><strong>≥ 0.3</strong><span>70.4° circular FOV · 0.3–10 m range</span></div>
-    </div>
-    <p>All remaining pairs are negative. FOV overlap uses virtual viewing volumes at the GT poses; it does not measure actual point overlap or account for wall occlusion.</p>
-    <dl class="metric-definitions">
-      <div><dt>Recall@1 <span>R@1</span></dt><dd>The fraction of eligible queries whose top-ranked match is positive. An eligible query, in Q<sup>+</sup>, has at least one positive database sample.</dd></div>
-      <div><dt>PR-AUC</dt><dd>The trapezoidal area under the precision–recall curve obtained by thresholding scores of <strong>all query–database pairs</strong>, including queries with no positive match.</dd></div>
-      <div><dt>Maximum F1 <span>F1<sub>max</sub></span></dt><dd>The maximum of 2PR / (P + R) over the same pair-score thresholds used for PR-AUC.</dd></div>
-    </dl>
-    <p class="format-callout"><strong>The denominators differ.</strong> R@1 measures top-1 retrieval over Q<sup>+</sup>. Pair-level recall in the PR curve counts accepted positive pairs divided by all GT positive pairs.</p>
-    <details class="technical-details"><summary>Threshold sweep and UMF scoring details</summary>
-      <p>Higher scores mean greater similarity; Euclidean distances are negated. Every unique score is a threshold, ties are processed together, and pairs with score ≥ threshold are accepted. The reject-all point is (recall = 0, precision = 1). PR-AUC includes its first segment, with no precision envelope or smoothing. F1<sub>max</sub> uses the same thresholds.</p>
-      <p>UMF keeps the cached top-25 reranking scores. Non-reranked pairs follow them on a lower score interval while preserving their global-score ordering. For a session pair, let m be the minimum reranking score and g the negative global distance. The tail uses s = m − 2 + (g − g<sub>min</sub>) / (g<sub>max</sub> − g<sub>min</sub>), or m − 1 when the global-score range is zero. This evaluation score convention is not a calibrated confidence.</p>
     </details>
   </section>
 
   <section id="results" class="content-section" aria-labelledby="results-title">
-    <h2 id="results-title">Quantitative results</h2>
-    <p>Select a site, modality, and metric to compare the four baselines in that group. The latest query session stays fixed at each site.</p>
+    <h2 id="results-title">Benchmark results</h2>
     <div class="result-controls" id="result-controls" hidden>
-      <label for="result-site">Site<select id="result-site"><option>Hall</option><option>Office</option><option>Quad</option></select></label>
       <label for="result-modality">Modality<select id="result-modality"><option value="LiDAR">LiDAR</option><option value="Visual">Visual</option><option value="Fusion">Fusion</option></select></label>
+      <label for="result-site">Site<select id="result-site"><option>Hall</option><option>Office</option><option>Quad</option></select></label>
       <label for="result-metric">Metric<select id="result-metric"><option value="r1">Recall@1 (%)</option><option value="auc">PR-AUC</option><option value="f1">Maximum F1</option></select></label>
     </div>
-    <p class="result-status" id="result-status" role="status" aria-live="polite">Hall · LiDAR · Recall@1 (%) · 4 session pairs</p>
-    <p class="table-scroll-hint">Scroll horizontally to compare all four methods.</p>
-    <div class="table-wrap result-table-wrap" role="region" aria-label="Selected benchmark results" tabindex="0">
-      <table class="data-table result-table" id="result-table"><caption>Hall: LiDAR Recall@1 (%)</caption><thead><tr><th scope="col">DB → Query</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">SOLiD</th><th scope="col" class="numeric">UniMPR-L</th><th scope="col" class="numeric">CASSPR</th><th scope="col" class="numeric">BEVPlace++</th></tr></thead><tbody><tr><th scope="row">04 → 05</th><td class="numeric change-score">0.444</td><td class="numeric"><strong>52.08</strong></td><td class="numeric">41.67</td><td class="numeric"><span class="runner-up">45.83</span></td><td class="numeric">29.17</td></tr><tr><th scope="row">03† → 05</th><td class="numeric change-score">0.464</td><td class="numeric">41.51</td><td class="numeric"><strong>54.72</strong></td><td class="numeric"><span class="runner-up">49.06</span></td><td class="numeric"><span class="runner-up">49.06</span></td></tr><tr><th scope="row">02 → 05</th><td class="numeric change-score">0.564</td><td class="numeric">15.38</td><td class="numeric">15.38</td><td class="numeric"><span class="runner-up">17.95</span></td><td class="numeric"><strong>25.64</strong></td></tr><tr><th scope="row">01 → 05</th><td class="numeric change-score">0.664</td><td class="numeric"><span class="runner-up">20.83</span></td><td class="numeric"><strong>27.08</strong></td><td class="numeric">14.58</td><td class="numeric">12.50</td></tr></tbody></table>
+    <h3 class="results-subtitle">Quantitative results</h3>
+    <p class="visually-hidden" id="result-status" role="status" aria-live="polite">Hall · LiDAR · Recall@1 (%)</p>
+    <div class="table-wrap result-table-wrap" role="region" aria-label="Selected benchmark results" tabindex="0"><table class="data-table result-table" id="result-table"><caption>Hall: LiDAR Recall@1 (%)</caption><thead><tr><th scope="col">DB → Query</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">SOLiD</th><th scope="col" class="numeric">UniMPR-L</th><th scope="col" class="numeric">CASSPR</th><th scope="col" class="numeric">BEVPlace++</th></tr></thead><tbody><tr><th scope="row">04 → 05</th><td class="numeric change-score">0.444</td><td class="numeric"><strong>52.08</strong></td><td class="numeric">41.67</td><td class="numeric"><span class="runner-up">45.83</span></td><td class="numeric">29.17</td></tr><tr><th scope="row">03† → 05</th><td class="numeric change-score">0.464</td><td class="numeric">41.51</td><td class="numeric"><strong>54.72</strong></td><td class="numeric"><span class="runner-up">49.06</span></td><td class="numeric"><span class="runner-up">49.06</span></td></tr><tr><th scope="row">02 → 05</th><td class="numeric change-score">0.564</td><td class="numeric">15.38</td><td class="numeric">15.38</td><td class="numeric"><span class="runner-up">17.95</span></td><td class="numeric"><strong>25.64</strong></td></tr><tr><th scope="row">01 → 05</th><td class="numeric change-score">0.664</td><td class="numeric"><span class="runner-up">20.83</span></td><td class="numeric"><strong>27.08</strong></td><td class="numeric">14.58</td><td class="numeric">12.50</td></tr></tbody></table></div>
+    <p class="result-legend"><span><strong>Bold</strong>: best; <span class="runner-up">underlined</span>: second-best</span> <span>† Night database session.</span></p>
+    <div class="benchmark-plot-pair">
+      <figure class="content-figure">
+        <h3>Precision–recall curves <span class="figure-site">Office</span></h3>
+<a id="pr-image-link" href="./assets/images/benchmark/office-lidar-pr.png" target="_blank" rel="noopener" aria-label="Enlarge: LiDAR precision–recall curves in Office, database 10 and 07 to query 12"><img id="pr-image" class="" src="./assets/images/benchmark/office-lidar-pr.png" width="2078" height="1535" loading="lazy" alt="LiDAR precision–recall curves in Office, database 10 and 07 to query 12"></a>
+      </figure>
+      <figure class="content-figure">
+        <h3><span>TCR<sub>VG</sub> vs. Recall@1</span> <span class="figure-site">Hall</span></h3>
+<a id="change-image-link" href="./assets/images/benchmark/hall-lidar-change.png" target="_blank" rel="noopener" aria-label="Enlarge: LiDAR Recall@1 versus TCR_VG across the four Hall session pairs"><img id="change-image" class="" src="./assets/images/benchmark/hall-lidar-change.png" width="2078" height="1535" loading="lazy" alt="LiDAR Recall@1 versus TCR_VG across the four Hall session pairs"></a>
+      </figure>
     </div>
-    <p class="table-note" id="result-scope">R@1 is evaluated on queries with at least one positive database sample (Q<sup>+</sup>). Higher is better.</p>
-    <p class="table-note"><strong>Bold</strong>: best; <span class="runner-up">underlined</span>: second-best within each row and modality, with ties retained. † Night database session. TCR<sub>VG</sub> is the session-pair change score. Session numbers map to <a class="inline-link" href="./data-format.html#session-ids">date-based folder IDs</a>.</p>
-    <details class="technical-details" id="all-results"><summary>All results and metrics</summary><p>Complete values for all 19 session pairs and 12 methods. R@1 is reported in percent; PR-AUC and F1<sub>max</sub> are on a 0–1 scale.</p><section class="full-result-group"><h3>Hall · LiDAR</h3><div class="table-wrap" role="region" aria-label="Hall LiDAR complete results" tabindex="0"><table class="data-table full-results-table"><caption>Hall LiDAR: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.444</td><td class="numeric"><strong>52.08</strong></td><td class="numeric"><strong>0.1441</strong></td><td class="numeric"><strong>0.2684</strong></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.444</td><td class="numeric">41.67</td><td class="numeric">0.1189</td><td class="numeric">0.1948</td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.444</td><td class="numeric"><span class="runner-up">45.83</span></td><td class="numeric"><span class="runner-up">0.1409</span></td><td class="numeric"><span class="runner-up">0.2510</span></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.444</td><td class="numeric">29.17</td><td class="numeric">0.1101</td><td class="numeric">0.2244</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03† → 05</th><th scope="row">SOLiD</th><td class="numeric">0.464</td><td class="numeric">41.51</td><td class="numeric"><strong>0.1830</strong></td><td class="numeric"><strong>0.2869</strong></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.464</td><td class="numeric"><strong>54.72</strong></td><td class="numeric">0.1404</td><td class="numeric">0.2473</td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.464</td><td class="numeric"><span class="runner-up">49.06</span></td><td class="numeric"><span class="runner-up">0.1810</span></td><td class="numeric">0.2604</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.464</td><td class="numeric"><span class="runner-up">49.06</span></td><td class="numeric">0.1777</td><td class="numeric"><span class="runner-up">0.2683</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.564</td><td class="numeric">15.38</td><td class="numeric">0.0431</td><td class="numeric">0.0974</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.564</td><td class="numeric">15.38</td><td class="numeric"><span class="runner-up">0.0520</span></td><td class="numeric"><span class="runner-up">0.1250</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.564</td><td class="numeric"><span class="runner-up">17.95</span></td><td class="numeric">0.0456</td><td class="numeric">0.1117</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.564</td><td class="numeric"><strong>25.64</strong></td><td class="numeric"><strong>0.0606</strong></td><td class="numeric"><strong>0.1667</strong></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.664</td><td class="numeric"><span class="runner-up">20.83</span></td><td class="numeric"><span class="runner-up">0.0959</span></td><td class="numeric"><span class="runner-up">0.1808</span></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.664</td><td class="numeric"><strong>27.08</strong></td><td class="numeric"><strong>0.1157</strong></td><td class="numeric"><strong>0.1933</strong></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.664</td><td class="numeric">14.58</td><td class="numeric">0.0932</td><td class="numeric">0.1622</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.664</td><td class="numeric">12.50</td><td class="numeric">0.0869</td><td class="numeric">0.1806</td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Hall · Visual</h3><div class="table-wrap" role="region" aria-label="Hall Visual complete results" tabindex="0"><table class="data-table full-results-table"><caption>Hall Visual: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SALAD</th><td class="numeric">0.444</td><td class="numeric">70.83</td><td class="numeric"><span class="runner-up">0.4935</span></td><td class="numeric"><span class="runner-up">0.5396</span></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.444</td><td class="numeric">27.08</td><td class="numeric">0.1323</td><td class="numeric">0.2493</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.444</td><td class="numeric"><strong>77.08</strong></td><td class="numeric"><strong>0.5203</strong></td><td class="numeric"><strong>0.5435</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.444</td><td class="numeric"><span class="runner-up">72.92</span></td><td class="numeric">0.4422</td><td class="numeric">0.4923</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03† → 05</th><th scope="row">SALAD</th><td class="numeric">0.464</td><td class="numeric"><strong>62.26</strong></td><td class="numeric"><strong>0.5847</strong></td><td class="numeric"><strong>0.5830</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.464</td><td class="numeric">32.08</td><td class="numeric">0.1915</td><td class="numeric">0.2857</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.464</td><td class="numeric"><span class="runner-up">60.38</span></td><td class="numeric"><span class="runner-up">0.5176</span></td><td class="numeric"><span class="runner-up">0.5398</span></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.464</td><td class="numeric">54.72</td><td class="numeric">0.4866</td><td class="numeric">0.5092</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SALAD</th><td class="numeric">0.564</td><td class="numeric"><strong>53.85</strong></td><td class="numeric"><strong>0.2916</strong></td><td class="numeric"><span class="runner-up">0.3713</span></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.564</td><td class="numeric">12.82</td><td class="numeric">0.0406</td><td class="numeric">0.1164</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.564</td><td class="numeric"><strong>53.85</strong></td><td class="numeric"><span class="runner-up">0.2556</span></td><td class="numeric"><strong>0.3750</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.564</td><td class="numeric"><span class="runner-up">46.15</span></td><td class="numeric">0.2458</td><td class="numeric">0.3226</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SALAD</th><td class="numeric">0.664</td><td class="numeric"><strong>56.25</strong></td><td class="numeric"><strong>0.3191</strong></td><td class="numeric"><strong>0.4088</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.664</td><td class="numeric">20.83</td><td class="numeric">0.0649</td><td class="numeric">0.1361</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.664</td><td class="numeric"><strong>56.25</strong></td><td class="numeric">0.2020</td><td class="numeric">0.3089</td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.664</td><td class="numeric"><span class="runner-up">45.83</span></td><td class="numeric"><span class="runner-up">0.2497</span></td><td class="numeric"><span class="runner-up">0.3348</span></td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Hall · Fusion</h3><div class="table-wrap" role="region" aria-label="Hall Fusion complete results" tabindex="0"><table class="data-table full-results-table"><caption>Hall Fusion: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.444</td><td class="numeric"><strong>77.08</strong></td><td class="numeric"><strong>0.5452</strong></td><td class="numeric"><strong>0.5753</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.444</td><td class="numeric"><span class="runner-up">50.00</span></td><td class="numeric">0.1240</td><td class="numeric">0.2091</td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.444</td><td class="numeric">27.08</td><td class="numeric">0.1325</td><td class="numeric">0.2288</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.444</td><td class="numeric">29.17</td><td class="numeric"><span class="runner-up">0.1903</span></td><td class="numeric"><span class="runner-up">0.2406</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03† → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.464</td><td class="numeric"><strong>62.26</strong></td><td class="numeric"><strong>0.6163</strong></td><td class="numeric"><strong>0.5907</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.464</td><td class="numeric"><span class="runner-up">56.60</span></td><td class="numeric">0.1412</td><td class="numeric">0.2640</td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.464</td><td class="numeric">39.62</td><td class="numeric">0.2361</td><td class="numeric">0.2978</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.464</td><td class="numeric">43.40</td><td class="numeric"><span class="runner-up">0.3067</span></td><td class="numeric"><span class="runner-up">0.3443</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.564</td><td class="numeric"><strong>53.85</strong></td><td class="numeric"><strong>0.3261</strong></td><td class="numeric"><strong>0.3708</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.564</td><td class="numeric"><span class="runner-up">23.08</span></td><td class="numeric">0.0897</td><td class="numeric">0.1408</td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.564</td><td class="numeric">17.95</td><td class="numeric"><span class="runner-up">0.1041</span></td><td class="numeric"><span class="runner-up">0.1739</span></td></tr><tr><th scope="row">UMF</th><td class="numeric">0.564</td><td class="numeric">20.51</td><td class="numeric">0.0786</td><td class="numeric">0.1463</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.664</td><td class="numeric"><strong>54.17</strong></td><td class="numeric"><strong>0.3435</strong></td><td class="numeric"><strong>0.4261</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.664</td><td class="numeric"><span class="runner-up">33.33</span></td><td class="numeric"><span class="runner-up">0.1092</span></td><td class="numeric"><span class="runner-up">0.2093</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.664</td><td class="numeric">16.67</td><td class="numeric">0.0555</td><td class="numeric">0.1067</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.664</td><td class="numeric">20.83</td><td class="numeric">0.0508</td><td class="numeric">0.1058</td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Office · LiDAR</h3><div class="table-wrap" role="region" aria-label="Office LiDAR complete results" tabindex="0"><table class="data-table full-results-table"><caption>Office LiDAR: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">11† → 12</th><th scope="row">SOLiD</th><td class="numeric">0.501</td><td class="numeric">53.85</td><td class="numeric">0.2736</td><td class="numeric">0.3333</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.501</td><td class="numeric"><strong>84.62</strong></td><td class="numeric"><span class="runner-up">0.5144</span></td><td class="numeric"><span class="runner-up">0.5128</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.501</td><td class="numeric"><span class="runner-up">69.23</span></td><td class="numeric"><strong>0.5600</strong></td><td class="numeric"><strong>0.6032</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.501</td><td class="numeric">65.38</td><td class="numeric">0.4158</td><td class="numeric">0.4375</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">10 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.210</td><td class="numeric">50.00</td><td class="numeric">0.3306</td><td class="numeric">0.3478</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.210</td><td class="numeric"><span class="runner-up">65.38</span></td><td class="numeric"><span class="runner-up">0.5441</span></td><td class="numeric"><span class="runner-up">0.5833</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.210</td><td class="numeric"><strong>73.08</strong></td><td class="numeric"><strong>0.6381</strong></td><td class="numeric"><strong>0.6557</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.210</td><td class="numeric"><span class="runner-up">65.38</span></td><td class="numeric">0.4672</td><td class="numeric">0.4681</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">09 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.180</td><td class="numeric">55.17</td><td class="numeric">0.3896</td><td class="numeric">0.4255</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.180</td><td class="numeric"><span class="runner-up">75.86</span></td><td class="numeric"><span class="runner-up">0.6428</span></td><td class="numeric"><span class="runner-up">0.6452</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.180</td><td class="numeric"><strong>79.31</strong></td><td class="numeric"><strong>0.7327</strong></td><td class="numeric"><strong>0.6849</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.180</td><td class="numeric">65.52</td><td class="numeric">0.4824</td><td class="numeric">0.4906</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">08 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.340</td><td class="numeric">60.00</td><td class="numeric">0.3743</td><td class="numeric">0.3673</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.340</td><td class="numeric"><span class="runner-up">72.00</span></td><td class="numeric"><span class="runner-up">0.4966</span></td><td class="numeric"><span class="runner-up">0.4706</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.340</td><td class="numeric"><strong>80.00</strong></td><td class="numeric"><strong>0.6193</strong></td><td class="numeric"><strong>0.5862</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.340</td><td class="numeric">56.00</td><td class="numeric">0.3825</td><td class="numeric"><span class="runner-up">0.4706</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">07 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.284</td><td class="numeric">53.57</td><td class="numeric">0.2454</td><td class="numeric">0.3226</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.284</td><td class="numeric"><span class="runner-up">67.86</span></td><td class="numeric"><span class="runner-up">0.4499</span></td><td class="numeric"><span class="runner-up">0.4948</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.284</td><td class="numeric"><strong>78.57</strong></td><td class="numeric"><strong>0.5384</strong></td><td class="numeric"><strong>0.6214</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.284</td><td class="numeric">50.00</td><td class="numeric">0.3356</td><td class="numeric">0.4337</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">06 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.260</td><td class="numeric">65.38</td><td class="numeric">0.3148</td><td class="numeric">0.4000</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.260</td><td class="numeric"><span class="runner-up">76.92</span></td><td class="numeric"><span class="runner-up">0.4871</span></td><td class="numeric"><span class="runner-up">0.5333</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.260</td><td class="numeric"><strong>80.77</strong></td><td class="numeric"><strong>0.5642</strong></td><td class="numeric"><strong>0.6133</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.260</td><td class="numeric">65.38</td><td class="numeric">0.4206</td><td class="numeric">0.4615</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">05 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.326</td><td class="numeric">56.25</td><td class="numeric">0.2986</td><td class="numeric"><span class="runner-up">0.4000</span></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.326</td><td class="numeric">56.25</td><td class="numeric"><span class="runner-up">0.3822</span></td><td class="numeric"><span class="runner-up">0.4000</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.326</td><td class="numeric"><strong>68.75</strong></td><td class="numeric"><strong>0.4942</strong></td><td class="numeric"><strong>0.4865</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.326</td><td class="numeric"><span class="runner-up">62.50</span></td><td class="numeric">0.2620</td><td class="numeric">0.3333</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">04 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.406</td><td class="numeric">42.11</td><td class="numeric">0.2751</td><td class="numeric">0.3478</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.406</td><td class="numeric"><span class="runner-up">57.89</span></td><td class="numeric"><span class="runner-up">0.4495</span></td><td class="numeric"><span class="runner-up">0.4737</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.406</td><td class="numeric"><strong>73.68</strong></td><td class="numeric"><strong>0.5685</strong></td><td class="numeric"><strong>0.6061</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.406</td><td class="numeric"><span class="runner-up">57.89</span></td><td class="numeric">0.3886</td><td class="numeric">0.4667</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.288</td><td class="numeric">54.55</td><td class="numeric">0.3729</td><td class="numeric">0.3881</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.288</td><td class="numeric"><strong>68.18</strong></td><td class="numeric"><strong>0.5363</strong></td><td class="numeric"><strong>0.6000</strong></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.288</td><td class="numeric"><span class="runner-up">63.64</span></td><td class="numeric"><span class="runner-up">0.5143</span></td><td class="numeric"><span class="runner-up">0.4878</span></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.288</td><td class="numeric">54.55</td><td class="numeric">0.3553</td><td class="numeric">0.4000</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02† → 12</th><th scope="row">SOLiD</th><td class="numeric">0.507</td><td class="numeric">44.44</td><td class="numeric">0.2043</td><td class="numeric">0.2807</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.507</td><td class="numeric"><span class="runner-up">55.56</span></td><td class="numeric"><span class="runner-up">0.3922</span></td><td class="numeric"><span class="runner-up">0.4286</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.507</td><td class="numeric"><strong>83.33</strong></td><td class="numeric"><strong>0.4912</strong></td><td class="numeric"><strong>0.5625</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.507</td><td class="numeric"><span class="runner-up">55.56</span></td><td class="numeric">0.3094</td><td class="numeric">0.3404</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 12</th><th scope="row">SOLiD</th><td class="numeric">0.525</td><td class="numeric"><span class="runner-up">28.57</span></td><td class="numeric">0.1310</td><td class="numeric">0.2857</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.525</td><td class="numeric"><strong>35.71</strong></td><td class="numeric"><strong>0.2653</strong></td><td class="numeric"><span class="runner-up">0.3448</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.525</td><td class="numeric"><span class="runner-up">28.57</span></td><td class="numeric"><span class="runner-up">0.2000</span></td><td class="numeric"><strong>0.3684</strong></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.525</td><td class="numeric">14.29</td><td class="numeric">0.1228</td><td class="numeric">0.1818</td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Office · Visual</h3><div class="table-wrap" role="region" aria-label="Office Visual complete results" tabindex="0"><table class="data-table full-results-table"><caption>Office Visual: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">11† → 12</th><th scope="row">SALAD</th><td class="numeric">0.501</td><td class="numeric"><span class="runner-up">65.38</span></td><td class="numeric"><span class="runner-up">0.4953</span></td><td class="numeric">0.5484</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.501</td><td class="numeric">42.31</td><td class="numeric">0.2186</td><td class="numeric">0.3288</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.501</td><td class="numeric"><strong>69.23</strong></td><td class="numeric"><strong>0.5670</strong></td><td class="numeric"><span class="runner-up">0.5862</span></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.501</td><td class="numeric"><span class="runner-up">65.38</span></td><td class="numeric">0.4928</td><td class="numeric"><strong>0.6129</strong></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">10 → 12</th><th scope="row">SALAD</th><td class="numeric">0.210</td><td class="numeric"><strong>92.31</strong></td><td class="numeric">0.6528</td><td class="numeric"><span class="runner-up">0.6265</span></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.210</td><td class="numeric">61.54</td><td class="numeric">0.4644</td><td class="numeric">0.4737</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.210</td><td class="numeric"><span class="runner-up">88.46</span></td><td class="numeric"><span class="runner-up">0.6799</span></td><td class="numeric"><strong>0.6452</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.210</td><td class="numeric">80.77</td><td class="numeric"><strong>0.6983</strong></td><td class="numeric">0.6133</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">09 → 12</th><th scope="row">SALAD</th><td class="numeric">0.180</td><td class="numeric"><span class="runner-up">86.21</span></td><td class="numeric"><span class="runner-up">0.7585</span></td><td class="numeric">0.6944</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.180</td><td class="numeric">65.52</td><td class="numeric">0.5504</td><td class="numeric">0.5783</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.180</td><td class="numeric"><strong>89.66</strong></td><td class="numeric">0.7376</td><td class="numeric"><strong>0.7119</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.180</td><td class="numeric"><span class="runner-up">86.21</span></td><td class="numeric"><strong>0.7780</strong></td><td class="numeric"><span class="runner-up">0.7000</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">08 → 12</th><th scope="row">SALAD</th><td class="numeric">0.340</td><td class="numeric"><strong>80.00</strong></td><td class="numeric"><strong>0.5668</strong></td><td class="numeric"><span class="runner-up">0.5316</span></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.340</td><td class="numeric">52.00</td><td class="numeric">0.4248</td><td class="numeric">0.4348</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.340</td><td class="numeric"><span class="runner-up">76.00</span></td><td class="numeric"><span class="runner-up">0.5629</span></td><td class="numeric"><strong>0.5714</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.340</td><td class="numeric"><strong>80.00</strong></td><td class="numeric">0.5583</td><td class="numeric">0.5091</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">07 → 12</th><th scope="row">SALAD</th><td class="numeric">0.284</td><td class="numeric"><strong>89.29</strong></td><td class="numeric"><strong>0.5864</strong></td><td class="numeric">0.5593</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.284</td><td class="numeric">57.14</td><td class="numeric">0.3704</td><td class="numeric">0.4737</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.284</td><td class="numeric"><strong>89.29</strong></td><td class="numeric"><span class="runner-up">0.5844</span></td><td class="numeric"><strong>0.5686</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.284</td><td class="numeric"><span class="runner-up">82.14</span></td><td class="numeric">0.5690</td><td class="numeric"><span class="runner-up">0.5679</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">06 → 12</th><th scope="row">SALAD</th><td class="numeric">0.260</td><td class="numeric"><strong>84.62</strong></td><td class="numeric">0.5475</td><td class="numeric">0.5682</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.260</td><td class="numeric"><span class="runner-up">61.54</span></td><td class="numeric">0.3144</td><td class="numeric">0.3689</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.260</td><td class="numeric"><strong>84.62</strong></td><td class="numeric"><strong>0.5905</strong></td><td class="numeric"><strong>0.6207</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.260</td><td class="numeric"><strong>84.62</strong></td><td class="numeric"><span class="runner-up">0.5505</span></td><td class="numeric"><span class="runner-up">0.5854</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">05 → 12</th><th scope="row">SALAD</th><td class="numeric">0.326</td><td class="numeric"><strong>75.00</strong></td><td class="numeric"><strong>0.5122</strong></td><td class="numeric"><strong>0.5625</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.326</td><td class="numeric">56.25</td><td class="numeric">0.2989</td><td class="numeric">0.3200</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.326</td><td class="numeric">56.25</td><td class="numeric"><span class="runner-up">0.4884</span></td><td class="numeric"><span class="runner-up">0.5517</span></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.326</td><td class="numeric"><span class="runner-up">62.50</span></td><td class="numeric">0.4236</td><td class="numeric">0.4746</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">04 → 12</th><th scope="row">SALAD</th><td class="numeric">0.406</td><td class="numeric"><strong>84.21</strong></td><td class="numeric"><strong>0.6579</strong></td><td class="numeric"><strong>0.6102</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.406</td><td class="numeric">52.63</td><td class="numeric">0.2411</td><td class="numeric">0.2564</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.406</td><td class="numeric"><span class="runner-up">78.95</span></td><td class="numeric"><span class="runner-up">0.6249</span></td><td class="numeric"><span class="runner-up">0.6038</span></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.406</td><td class="numeric">68.42</td><td class="numeric">0.5891</td><td class="numeric">0.5500</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 12</th><th scope="row">SALAD</th><td class="numeric">0.288</td><td class="numeric"><span class="runner-up">81.82</span></td><td class="numeric"><span class="runner-up">0.5547</span></td><td class="numeric"><strong>0.5714</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.288</td><td class="numeric">63.64</td><td class="numeric">0.3380</td><td class="numeric">0.4225</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.288</td><td class="numeric"><span class="runner-up">81.82</span></td><td class="numeric"><strong>0.5737</strong></td><td class="numeric">0.5667</td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.288</td><td class="numeric"><strong>86.36</strong></td><td class="numeric">0.5244</td><td class="numeric"><span class="runner-up">0.5679</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02† → 12</th><th scope="row">SALAD</th><td class="numeric">0.507</td><td class="numeric"><span class="runner-up">61.11</span></td><td class="numeric"><span class="runner-up">0.4187</span></td><td class="numeric"><span class="runner-up">0.4615</span></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.507</td><td class="numeric">33.33</td><td class="numeric">0.2129</td><td class="numeric">0.3077</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.507</td><td class="numeric"><strong>72.22</strong></td><td class="numeric"><strong>0.5483</strong></td><td class="numeric"><strong>0.5263</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.507</td><td class="numeric">55.56</td><td class="numeric">0.3977</td><td class="numeric">0.4151</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 12</th><th scope="row">SALAD</th><td class="numeric">0.525</td><td class="numeric"><strong>42.86</strong></td><td class="numeric"><strong>0.4855</strong></td><td class="numeric"><strong>0.5455</strong></td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.525</td><td class="numeric">21.43</td><td class="numeric">0.0813</td><td class="numeric">0.2353</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.525</td><td class="numeric"><span class="runner-up">35.71</span></td><td class="numeric">0.3627</td><td class="numeric">0.4706</td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.525</td><td class="numeric">28.57</td><td class="numeric"><span class="runner-up">0.3889</span></td><td class="numeric"><span class="runner-up">0.5405</span></td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Office · Fusion</h3><div class="table-wrap" role="region" aria-label="Office Fusion complete results" tabindex="0"><table class="data-table full-results-table"><caption>Office Fusion: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">11† → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.501</td><td class="numeric"><span class="runner-up">69.23</span></td><td class="numeric"><span class="runner-up">0.5243</span></td><td class="numeric"><strong>0.5714</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.501</td><td class="numeric"><strong>80.77</strong></td><td class="numeric"><strong>0.5450</strong></td><td class="numeric"><span class="runner-up">0.5161</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.501</td><td class="numeric">46.15</td><td class="numeric">0.2340</td><td class="numeric">0.3500</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.501</td><td class="numeric">38.46</td><td class="numeric">0.2717</td><td class="numeric">0.3774</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">10 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.210</td><td class="numeric"><strong>92.31</strong></td><td class="numeric"><strong>0.6661</strong></td><td class="numeric"><span class="runner-up">0.6098</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.210</td><td class="numeric"><span class="runner-up">76.92</span></td><td class="numeric"><span class="runner-up">0.5933</span></td><td class="numeric"><strong>0.6197</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.210</td><td class="numeric">61.54</td><td class="numeric">0.3196</td><td class="numeric">0.4146</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.210</td><td class="numeric">46.15</td><td class="numeric">0.5086</td><td class="numeric">0.5357</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">09 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.180</td><td class="numeric"><strong>86.21</strong></td><td class="numeric"><strong>0.7688</strong></td><td class="numeric"><strong>0.6875</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.180</td><td class="numeric"><span class="runner-up">79.31</span></td><td class="numeric"><span class="runner-up">0.6937</span></td><td class="numeric"><span class="runner-up">0.6462</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.180</td><td class="numeric">58.62</td><td class="numeric">0.4044</td><td class="numeric">0.5172</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.180</td><td class="numeric">65.52</td><td class="numeric">0.4764</td><td class="numeric">0.5915</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">08 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.340</td><td class="numeric"><strong>80.00</strong></td><td class="numeric"><strong>0.5754</strong></td><td class="numeric"><strong>0.5405</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.340</td><td class="numeric"><span class="runner-up">72.00</span></td><td class="numeric"><span class="runner-up">0.5135</span></td><td class="numeric"><span class="runner-up">0.4810</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.340</td><td class="numeric">56.00</td><td class="numeric">0.2802</td><td class="numeric">0.3797</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.340</td><td class="numeric">48.00</td><td class="numeric">0.2652</td><td class="numeric">0.3600</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">07 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.284</td><td class="numeric"><strong>89.29</strong></td><td class="numeric"><strong>0.6010</strong></td><td class="numeric"><strong>0.5872</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.284</td><td class="numeric"><span class="runner-up">75.00</span></td><td class="numeric"><span class="runner-up">0.4808</span></td><td class="numeric"><span class="runner-up">0.5057</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.284</td><td class="numeric">42.86</td><td class="numeric">0.2497</td><td class="numeric">0.3214</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.284</td><td class="numeric">46.43</td><td class="numeric">0.3000</td><td class="numeric">0.3860</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">06 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.260</td><td class="numeric"><strong>84.62</strong></td><td class="numeric"><strong>0.5653</strong></td><td class="numeric"><strong>0.5882</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.260</td><td class="numeric"><span class="runner-up">76.92</span></td><td class="numeric"><span class="runner-up">0.5127</span></td><td class="numeric"><span class="runner-up">0.5476</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.260</td><td class="numeric">38.46</td><td class="numeric">0.2598</td><td class="numeric">0.3600</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.260</td><td class="numeric">46.15</td><td class="numeric">0.3582</td><td class="numeric">0.3934</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">05 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.326</td><td class="numeric"><strong>75.00</strong></td><td class="numeric"><strong>0.5371</strong></td><td class="numeric"><strong>0.5806</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.326</td><td class="numeric"><span class="runner-up">56.25</span></td><td class="numeric"><span class="runner-up">0.4122</span></td><td class="numeric">0.4103</td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.326</td><td class="numeric">31.25</td><td class="numeric">0.2678</td><td class="numeric">0.3721</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.326</td><td class="numeric">43.75</td><td class="numeric">0.3639</td><td class="numeric"><span class="runner-up">0.4667</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">04 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.406</td><td class="numeric"><strong>84.21</strong></td><td class="numeric"><strong>0.6582</strong></td><td class="numeric"><strong>0.5862</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.406</td><td class="numeric"><span class="runner-up">73.68</span></td><td class="numeric"><span class="runner-up">0.4884</span></td><td class="numeric"><span class="runner-up">0.5500</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.406</td><td class="numeric">63.16</td><td class="numeric">0.3529</td><td class="numeric">0.4118</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.406</td><td class="numeric">31.58</td><td class="numeric">0.2441</td><td class="numeric">0.3860</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.288</td><td class="numeric"><strong>81.82</strong></td><td class="numeric"><strong>0.5636</strong></td><td class="numeric"><span class="runner-up">0.5714</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.288</td><td class="numeric"><span class="runner-up">77.27</span></td><td class="numeric"><span class="runner-up">0.5589</span></td><td class="numeric"><strong>0.6133</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.288</td><td class="numeric">54.55</td><td class="numeric">0.3020</td><td class="numeric">0.4138</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.288</td><td class="numeric">68.18</td><td class="numeric">0.3120</td><td class="numeric">0.3830</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02† → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.507</td><td class="numeric"><strong>61.11</strong></td><td class="numeric"><strong>0.4549</strong></td><td class="numeric"><span class="runner-up">0.4865</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.507</td><td class="numeric"><strong>61.11</strong></td><td class="numeric"><span class="runner-up">0.4239</span></td><td class="numeric"><strong>0.4878</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.507</td><td class="numeric"><span class="runner-up">27.78</span></td><td class="numeric">0.1324</td><td class="numeric">0.2264</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.507</td><td class="numeric">11.11</td><td class="numeric">0.1870</td><td class="numeric">0.3182</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 12</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.525</td><td class="numeric"><strong>42.86</strong></td><td class="numeric"><strong>0.4764</strong></td><td class="numeric"><strong>0.5405</strong></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.525</td><td class="numeric"><span class="runner-up">28.57</span></td><td class="numeric"><span class="runner-up">0.2696</span></td><td class="numeric"><span class="runner-up">0.3448</span></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.525</td><td class="numeric">21.43</td><td class="numeric">0.1061</td><td class="numeric">0.2800</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.525</td><td class="numeric">14.29</td><td class="numeric">0.1186</td><td class="numeric">0.1951</td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Quad · LiDAR</h3><div class="table-wrap" role="region" aria-label="Quad LiDAR complete results" tabindex="0"><table class="data-table full-results-table"><caption>Quad LiDAR: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.224</td><td class="numeric">60.34</td><td class="numeric"><span class="runner-up">0.4935</span></td><td class="numeric"><span class="runner-up">0.4960</span></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.224</td><td class="numeric"><span class="runner-up">65.52</span></td><td class="numeric"><strong>0.5426</strong></td><td class="numeric"><strong>0.5914</strong></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.224</td><td class="numeric"><strong>67.24</strong></td><td class="numeric">0.3827</td><td class="numeric">0.4725</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.224</td><td class="numeric">41.38</td><td class="numeric">0.2888</td><td class="numeric">0.3544</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.313</td><td class="numeric"><strong>64.29</strong></td><td class="numeric"><strong>0.5133</strong></td><td class="numeric"><strong>0.5273</strong></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.313</td><td class="numeric"><span class="runner-up">53.57</span></td><td class="numeric"><span class="runner-up">0.3701</span></td><td class="numeric"><span class="runner-up">0.4615</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.313</td><td class="numeric">51.79</td><td class="numeric">0.2861</td><td class="numeric">0.3700</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.313</td><td class="numeric">35.71</td><td class="numeric">0.1770</td><td class="numeric">0.2897</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.294</td><td class="numeric"><span class="runner-up">61.40</span></td><td class="numeric"><strong>0.4631</strong></td><td class="numeric"><strong>0.5128</strong></td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.294</td><td class="numeric">57.89</td><td class="numeric"><span class="runner-up">0.3957</span></td><td class="numeric"><span class="runner-up">0.4795</span></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.294</td><td class="numeric"><strong>64.91</strong></td><td class="numeric">0.3850</td><td class="numeric">0.4394</td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.294</td><td class="numeric">35.09</td><td class="numeric">0.1876</td><td class="numeric">0.2788</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SOLiD</th><td class="numeric">0.403</td><td class="numeric">36.00</td><td class="numeric">0.2533</td><td class="numeric">0.4078</td></tr><tr><th scope="row">UniMPR-L</th><td class="numeric">0.403</td><td class="numeric"><strong>68.00</strong></td><td class="numeric"><strong>0.5374</strong></td><td class="numeric"><strong>0.5631</strong></td></tr><tr><th scope="row">CASSPR</th><td class="numeric">0.403</td><td class="numeric"><span class="runner-up">64.00</span></td><td class="numeric"><span class="runner-up">0.4774</span></td><td class="numeric"><span class="runner-up">0.4948</span></td></tr><tr><th scope="row">BEVPlace++</th><td class="numeric">0.403</td><td class="numeric">24.00</td><td class="numeric">0.2324</td><td class="numeric">0.3091</td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Quad · Visual</h3><div class="table-wrap" role="region" aria-label="Quad Visual complete results" tabindex="0"><table class="data-table full-results-table"><caption>Quad Visual: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SALAD</th><td class="numeric">0.224</td><td class="numeric"><span class="runner-up">58.62</span></td><td class="numeric"><span class="runner-up">0.3165</span></td><td class="numeric">0.3819</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.224</td><td class="numeric">50.00</td><td class="numeric">0.2457</td><td class="numeric">0.3279</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.224</td><td class="numeric"><strong>62.07</strong></td><td class="numeric"><strong>0.3539</strong></td><td class="numeric"><strong>0.4029</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.224</td><td class="numeric">56.90</td><td class="numeric">0.3100</td><td class="numeric"><span class="runner-up">0.3934</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 05</th><th scope="row">SALAD</th><td class="numeric">0.313</td><td class="numeric"><span class="runner-up">53.57</span></td><td class="numeric">0.2782</td><td class="numeric">0.3421</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.313</td><td class="numeric">44.64</td><td class="numeric">0.2331</td><td class="numeric">0.3382</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.313</td><td class="numeric">51.79</td><td class="numeric"><span class="runner-up">0.2941</span></td><td class="numeric"><strong>0.3842</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.313</td><td class="numeric"><strong>60.71</strong></td><td class="numeric"><strong>0.3024</strong></td><td class="numeric"><span class="runner-up">0.3656</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SALAD</th><td class="numeric">0.294</td><td class="numeric"><span class="runner-up">56.14</span></td><td class="numeric">0.3329</td><td class="numeric">0.4091</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.294</td><td class="numeric">31.58</td><td class="numeric">0.1895</td><td class="numeric">0.2826</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.294</td><td class="numeric"><strong>64.91</strong></td><td class="numeric"><strong>0.4017</strong></td><td class="numeric"><strong>0.4480</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.294</td><td class="numeric"><strong>64.91</strong></td><td class="numeric"><span class="runner-up">0.3524</span></td><td class="numeric"><span class="runner-up">0.4295</span></td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SALAD</th><td class="numeric">0.403</td><td class="numeric"><span class="runner-up">52.00</span></td><td class="numeric">0.4442</td><td class="numeric">0.5472</td></tr><tr><th scope="row">UniMPR-C</th><td class="numeric">0.403</td><td class="numeric">40.00</td><td class="numeric">0.3803</td><td class="numeric">0.4444</td></tr><tr><th scope="row">SelaVPR++</th><td class="numeric">0.403</td><td class="numeric"><strong>68.00</strong></td><td class="numeric"><strong>0.6250</strong></td><td class="numeric"><strong>0.6383</strong></td></tr><tr><th scope="row">ImAge</th><td class="numeric">0.403</td><td class="numeric"><strong>68.00</strong></td><td class="numeric"><span class="runner-up">0.5939</span></td><td class="numeric"><span class="runner-up">0.5934</span></td></tr></tbody></table></div></section>
-<section class="full-result-group"><h3>Quad · Fusion</h3><div class="table-wrap" role="region" aria-label="Quad Fusion complete results" tabindex="0"><table class="data-table full-results-table"><caption>Quad Fusion: all metrics</caption><thead><tr><th scope="col">DB → Query</th><th scope="col">Method</th><th scope="col" class="numeric">TCR_VG</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric">PR-AUC</th><th scope="col" class="numeric">F1<sub>max</sub></th></tr></thead><tbody><tr><th scope="rowgroup" rowspan="4">04 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.224</td><td class="numeric"><span class="runner-up">65.52</span></td><td class="numeric"><span class="runner-up">0.3491</span></td><td class="numeric"><span class="runner-up">0.4176</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.224</td><td class="numeric"><strong>70.69</strong></td><td class="numeric"><strong>0.5403</strong></td><td class="numeric"><strong>0.5786</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.224</td><td class="numeric">37.93</td><td class="numeric">0.1978</td><td class="numeric">0.2478</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.224</td><td class="numeric">32.76</td><td class="numeric">0.1582</td><td class="numeric">0.2564</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">03 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.313</td><td class="numeric"><strong>58.93</strong></td><td class="numeric"><span class="runner-up">0.2888</span></td><td class="numeric"><span class="runner-up">0.3425</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.313</td><td class="numeric"><span class="runner-up">53.57</span></td><td class="numeric"><strong>0.3785</strong></td><td class="numeric"><strong>0.4568</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.313</td><td class="numeric">21.43</td><td class="numeric">0.1330</td><td class="numeric">0.2378</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.313</td><td class="numeric">26.79</td><td class="numeric">0.1065</td><td class="numeric">0.2051</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">02 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.294</td><td class="numeric"><span class="runner-up">56.14</span></td><td class="numeric"><span class="runner-up">0.3575</span></td><td class="numeric"><span class="runner-up">0.4186</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.294</td><td class="numeric"><strong>61.40</strong></td><td class="numeric"><strong>0.4021</strong></td><td class="numeric"><strong>0.5000</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.294</td><td class="numeric">17.54</td><td class="numeric">0.1334</td><td class="numeric">0.2286</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.294</td><td class="numeric">28.07</td><td class="numeric">0.1187</td><td class="numeric">0.2683</td></tr></tbody><tbody><tr><th scope="rowgroup" rowspan="4">01 → 05</th><th scope="row">SALAD+CASSPR</th><td class="numeric">0.403</td><td class="numeric"><span class="runner-up">52.00</span></td><td class="numeric"><span class="runner-up">0.4970</span></td><td class="numeric"><span class="runner-up">0.5684</span></td></tr><tr><th scope="row">UniMPR-LC</th><td class="numeric">0.403</td><td class="numeric"><strong>68.00</strong></td><td class="numeric"><strong>0.5751</strong></td><td class="numeric"><strong>0.5743</strong></td></tr><tr><th scope="row">MinkLoc++</th><td class="numeric">0.403</td><td class="numeric">28.00</td><td class="numeric">0.2512</td><td class="numeric">0.3185</td></tr><tr><th scope="row">UMF</th><td class="numeric">0.403</td><td class="numeric">28.00</td><td class="numeric">0.3302</td><td class="numeric">0.4062</td></tr></tbody></table></div></section></details>
-  </section>
-
-  <section id="pr-curves" class="content-section" aria-labelledby="pr-curves-title">
-    <h2 id="pr-curves-title">Precision–recall curves</h2>
-    <p>Office <strong>10 → 12</strong> (solid) and <strong>07 → 12</strong> (dashed) illustrate score separation for a recent and an older database. The older database has lower PR-AUC for all twelve methods, even when R@1 is comparable or higher.</p>
-    <div class="figure-controls" id="pr-controls" hidden><label for="pr-modality">Curve modality<select id="pr-modality"><option value="lidar">LiDAR</option><option value="visual">Visual</option><option value="fusion">Fusion</option></select></label></div>
-    <div class="switchable-figures" id="pr-figures"><figure class="content-figure " data-modality="lidar"><a href="./assets/images/benchmark/office-lidar-pr.png" target="_blank" rel="noopener" aria-label="Enlarge: LiDAR pair-level precision–recall curves in Office"><img src="./assets/images/benchmark/office-lidar-pr.png" width="2078" height="1535" loading="lazy" alt="LiDAR pair-level precision–recall curves in Office"></a><figcaption><strong>LiDAR place recognition.</strong> All query–database pairs; solid: 10 → 12, dashed: 07 → 12.</figcaption></figure>
-<figure class="content-figure " data-modality="visual"><a href="./assets/images/benchmark/office-visual-pr.png" target="_blank" rel="noopener" aria-label="Enlarge: Visual pair-level precision–recall curves in Office"><img src="./assets/images/benchmark/office-visual-pr.png" width="2078" height="1535" loading="lazy" alt="Visual pair-level precision–recall curves in Office"></a><figcaption><strong>Visual place recognition.</strong> All query–database pairs; solid: 10 → 12, dashed: 07 → 12.</figcaption></figure>
-<figure class="content-figure " data-modality="fusion"><a href="./assets/images/benchmark/office-fusion-pr.png" target="_blank" rel="noopener" aria-label="Enlarge: Fusion pair-level precision–recall curves in Office"><img src="./assets/images/benchmark/office-fusion-pr.png" width="2078" height="1535" loading="lazy" alt="Fusion pair-level precision–recall curves in Office"></a><figcaption><strong>Fusion place recognition.</strong> All query–database pairs; solid: 10 → 12, dashed: 07 → 12.</figcaption></figure></div>
+    <details class="technical-details full-results-details" id="all-results"><summary>All results and metrics</summary>
+<div class="paper-result-group"><h3>LiDAR place recognition</h3>
+<div class="table-wrap" role="region" aria-label="LiDAR full benchmark results" tabindex="0"><table class="data-table paper-results-table">
+<caption>LiDAR results across all 19 session pairs</caption>
+<thead><tr><th scope="col" rowspan="2">Site</th><th scope="col" rowspan="2">DB → Query</th><th scope="col" rowspan="2">TCR<sub>VG</sub></th>
+<th scope="colgroup" colspan="3" class="method-group">SOLiD</th>
+<th scope="colgroup" colspan="3" class="method-group">UniMPR-L</th>
+<th scope="colgroup" colspan="3" class="method-group">CASSPR</th>
+<th scope="colgroup" colspan="3" class="method-group">BEVPlace++</th>
+</tr><tr>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+</tr></thead>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Hall</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.444</td>
+<td class="numeric"><strong>0.1441</strong></td>
+<td class="numeric"><strong>52.08</strong></td>
+<td class="numeric metric-group-end"><strong>0.2684</strong></td>
+<td class="numeric">0.1189</td>
+<td class="numeric">41.67</td>
+<td class="numeric metric-group-end">0.1948</td>
+<td class="numeric"><span class="runner-up">0.1409</span></td>
+<td class="numeric"><span class="runner-up">45.83</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.2510</span></td>
+<td class="numeric">0.1101</td>
+<td class="numeric">29.17</td>
+<td class="numeric metric-group-end">0.2244</td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">03† → 05</th><td class="numeric change-score">0.464</td>
+<td class="numeric"><strong>0.1830</strong></td>
+<td class="numeric">41.51</td>
+<td class="numeric metric-group-end"><strong>0.2869</strong></td>
+<td class="numeric">0.1404</td>
+<td class="numeric"><strong>54.72</strong></td>
+<td class="numeric metric-group-end">0.2473</td>
+<td class="numeric"><span class="runner-up">0.1810</span></td>
+<td class="numeric"><span class="runner-up">49.06</span></td>
+<td class="numeric metric-group-end">0.2604</td>
+<td class="numeric">0.1777</td>
+<td class="numeric"><span class="runner-up">49.06</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.2683</span></td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.564</td>
+<td class="numeric">0.0431</td>
+<td class="numeric">15.38</td>
+<td class="numeric metric-group-end">0.0974</td>
+<td class="numeric"><span class="runner-up">0.0520</span></td>
+<td class="numeric">15.38</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.1250</span></td>
+<td class="numeric">0.0456</td>
+<td class="numeric"><span class="runner-up">17.95</span></td>
+<td class="numeric metric-group-end">0.1117</td>
+<td class="numeric"><strong>0.0606</strong></td>
+<td class="numeric"><strong>25.64</strong></td>
+<td class="numeric metric-group-end"><strong>0.1667</strong></td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.664</td>
+<td class="numeric"><span class="runner-up">0.0959</span></td>
+<td class="numeric"><span class="runner-up">20.83</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.1808</span></td>
+<td class="numeric"><strong>0.1157</strong></td>
+<td class="numeric"><strong>27.08</strong></td>
+<td class="numeric metric-group-end"><strong>0.1933</strong></td>
+<td class="numeric">0.0932</td>
+<td class="numeric">14.58</td>
+<td class="numeric metric-group-end">0.1622</td>
+<td class="numeric">0.0869</td>
+<td class="numeric">12.50</td>
+<td class="numeric metric-group-end">0.1806</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="11">Office</th>
+<th scope="row" title="Night database session">11† → 12</th><td class="numeric change-score">0.501</td>
+<td class="numeric">0.2736</td>
+<td class="numeric">53.85</td>
+<td class="numeric metric-group-end">0.3333</td>
+<td class="numeric"><span class="runner-up">0.5144</span></td>
+<td class="numeric"><strong>84.62</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5128</span></td>
+<td class="numeric"><strong>0.5600</strong></td>
+<td class="numeric"><span class="runner-up">69.23</span></td>
+<td class="numeric metric-group-end"><strong>0.6032</strong></td>
+<td class="numeric">0.4158</td>
+<td class="numeric">65.38</td>
+<td class="numeric metric-group-end">0.4375</td>
+</tr>
+<tr>
+<th scope="row">10 → 12</th><td class="numeric change-score">0.210</td>
+<td class="numeric">0.3306</td>
+<td class="numeric">50.00</td>
+<td class="numeric metric-group-end">0.3478</td>
+<td class="numeric"><span class="runner-up">0.5441</span></td>
+<td class="numeric"><span class="runner-up">65.38</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5833</span></td>
+<td class="numeric"><strong>0.6381</strong></td>
+<td class="numeric"><strong>73.08</strong></td>
+<td class="numeric metric-group-end"><strong>0.6557</strong></td>
+<td class="numeric">0.4672</td>
+<td class="numeric"><span class="runner-up">65.38</span></td>
+<td class="numeric metric-group-end">0.4681</td>
+</tr>
+<tr>
+<th scope="row">09 → 12</th><td class="numeric change-score">0.180</td>
+<td class="numeric">0.3896</td>
+<td class="numeric">55.17</td>
+<td class="numeric metric-group-end">0.4255</td>
+<td class="numeric"><span class="runner-up">0.6428</span></td>
+<td class="numeric"><span class="runner-up">75.86</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.6452</span></td>
+<td class="numeric"><strong>0.7327</strong></td>
+<td class="numeric"><strong>79.31</strong></td>
+<td class="numeric metric-group-end"><strong>0.6849</strong></td>
+<td class="numeric">0.4824</td>
+<td class="numeric">65.52</td>
+<td class="numeric metric-group-end">0.4906</td>
+</tr>
+<tr>
+<th scope="row">08 → 12</th><td class="numeric change-score">0.340</td>
+<td class="numeric">0.3743</td>
+<td class="numeric">60.00</td>
+<td class="numeric metric-group-end">0.3673</td>
+<td class="numeric"><span class="runner-up">0.4966</span></td>
+<td class="numeric"><span class="runner-up">72.00</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4706</span></td>
+<td class="numeric"><strong>0.6193</strong></td>
+<td class="numeric"><strong>80.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5862</strong></td>
+<td class="numeric">0.3825</td>
+<td class="numeric">56.00</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4706</span></td>
+</tr>
+<tr>
+<th scope="row">07 → 12</th><td class="numeric change-score">0.284</td>
+<td class="numeric">0.2454</td>
+<td class="numeric">53.57</td>
+<td class="numeric metric-group-end">0.3226</td>
+<td class="numeric"><span class="runner-up">0.4499</span></td>
+<td class="numeric"><span class="runner-up">67.86</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4948</span></td>
+<td class="numeric"><strong>0.5384</strong></td>
+<td class="numeric"><strong>78.57</strong></td>
+<td class="numeric metric-group-end"><strong>0.6214</strong></td>
+<td class="numeric">0.3356</td>
+<td class="numeric">50.00</td>
+<td class="numeric metric-group-end">0.4337</td>
+</tr>
+<tr>
+<th scope="row">06 → 12</th><td class="numeric change-score">0.260</td>
+<td class="numeric">0.3148</td>
+<td class="numeric">65.38</td>
+<td class="numeric metric-group-end">0.4000</td>
+<td class="numeric"><span class="runner-up">0.4871</span></td>
+<td class="numeric"><span class="runner-up">76.92</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5333</span></td>
+<td class="numeric"><strong>0.5642</strong></td>
+<td class="numeric"><strong>80.77</strong></td>
+<td class="numeric metric-group-end"><strong>0.6133</strong></td>
+<td class="numeric">0.4206</td>
+<td class="numeric">65.38</td>
+<td class="numeric metric-group-end">0.4615</td>
+</tr>
+<tr>
+<th scope="row">05 → 12</th><td class="numeric change-score">0.326</td>
+<td class="numeric">0.2986</td>
+<td class="numeric">56.25</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4000</span></td>
+<td class="numeric"><span class="runner-up">0.3822</span></td>
+<td class="numeric">56.25</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4000</span></td>
+<td class="numeric"><strong>0.4942</strong></td>
+<td class="numeric"><strong>68.75</strong></td>
+<td class="numeric metric-group-end"><strong>0.4865</strong></td>
+<td class="numeric">0.2620</td>
+<td class="numeric"><span class="runner-up">62.50</span></td>
+<td class="numeric metric-group-end">0.3333</td>
+</tr>
+<tr>
+<th scope="row">04 → 12</th><td class="numeric change-score">0.406</td>
+<td class="numeric">0.2751</td>
+<td class="numeric">42.11</td>
+<td class="numeric metric-group-end">0.3478</td>
+<td class="numeric"><span class="runner-up">0.4495</span></td>
+<td class="numeric"><span class="runner-up">57.89</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4737</span></td>
+<td class="numeric"><strong>0.5685</strong></td>
+<td class="numeric"><strong>73.68</strong></td>
+<td class="numeric metric-group-end"><strong>0.6061</strong></td>
+<td class="numeric">0.3886</td>
+<td class="numeric"><span class="runner-up">57.89</span></td>
+<td class="numeric metric-group-end">0.4667</td>
+</tr>
+<tr>
+<th scope="row">03 → 12</th><td class="numeric change-score">0.288</td>
+<td class="numeric">0.3729</td>
+<td class="numeric">54.55</td>
+<td class="numeric metric-group-end">0.3881</td>
+<td class="numeric"><strong>0.5363</strong></td>
+<td class="numeric"><strong>68.18</strong></td>
+<td class="numeric metric-group-end"><strong>0.6000</strong></td>
+<td class="numeric"><span class="runner-up">0.5143</span></td>
+<td class="numeric"><span class="runner-up">63.64</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4878</span></td>
+<td class="numeric">0.3553</td>
+<td class="numeric">54.55</td>
+<td class="numeric metric-group-end">0.4000</td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">02† → 12</th><td class="numeric change-score">0.507</td>
+<td class="numeric">0.2043</td>
+<td class="numeric">44.44</td>
+<td class="numeric metric-group-end">0.2807</td>
+<td class="numeric"><span class="runner-up">0.3922</span></td>
+<td class="numeric"><span class="runner-up">55.56</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4286</span></td>
+<td class="numeric"><strong>0.4912</strong></td>
+<td class="numeric"><strong>83.33</strong></td>
+<td class="numeric metric-group-end"><strong>0.5625</strong></td>
+<td class="numeric">0.3094</td>
+<td class="numeric"><span class="runner-up">55.56</span></td>
+<td class="numeric metric-group-end">0.3404</td>
+</tr>
+<tr>
+<th scope="row">01 → 12</th><td class="numeric change-score">0.525</td>
+<td class="numeric">0.1310</td>
+<td class="numeric"><span class="runner-up">28.57</span></td>
+<td class="numeric metric-group-end">0.2857</td>
+<td class="numeric"><strong>0.2653</strong></td>
+<td class="numeric"><strong>35.71</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3448</span></td>
+<td class="numeric"><span class="runner-up">0.2000</span></td>
+<td class="numeric"><span class="runner-up">28.57</span></td>
+<td class="numeric metric-group-end"><strong>0.3684</strong></td>
+<td class="numeric">0.1228</td>
+<td class="numeric">14.29</td>
+<td class="numeric metric-group-end">0.1818</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Quad</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.224</td>
+<td class="numeric"><span class="runner-up">0.4935</span></td>
+<td class="numeric">60.34</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4960</span></td>
+<td class="numeric"><strong>0.5426</strong></td>
+<td class="numeric"><span class="runner-up">65.52</span></td>
+<td class="numeric metric-group-end"><strong>0.5914</strong></td>
+<td class="numeric">0.3827</td>
+<td class="numeric"><strong>67.24</strong></td>
+<td class="numeric metric-group-end">0.4725</td>
+<td class="numeric">0.2888</td>
+<td class="numeric">41.38</td>
+<td class="numeric metric-group-end">0.3544</td>
+</tr>
+<tr>
+<th scope="row">03 → 05</th><td class="numeric change-score">0.313</td>
+<td class="numeric"><strong>0.5133</strong></td>
+<td class="numeric"><strong>64.29</strong></td>
+<td class="numeric metric-group-end"><strong>0.5273</strong></td>
+<td class="numeric"><span class="runner-up">0.3701</span></td>
+<td class="numeric"><span class="runner-up">53.57</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4615</span></td>
+<td class="numeric">0.2861</td>
+<td class="numeric">51.79</td>
+<td class="numeric metric-group-end">0.3700</td>
+<td class="numeric">0.1770</td>
+<td class="numeric">35.71</td>
+<td class="numeric metric-group-end">0.2897</td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.294</td>
+<td class="numeric"><strong>0.4631</strong></td>
+<td class="numeric"><span class="runner-up">61.40</span></td>
+<td class="numeric metric-group-end"><strong>0.5128</strong></td>
+<td class="numeric"><span class="runner-up">0.3957</span></td>
+<td class="numeric">57.89</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4795</span></td>
+<td class="numeric">0.3850</td>
+<td class="numeric"><strong>64.91</strong></td>
+<td class="numeric metric-group-end">0.4394</td>
+<td class="numeric">0.1876</td>
+<td class="numeric">35.09</td>
+<td class="numeric metric-group-end">0.2788</td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.403</td>
+<td class="numeric">0.2533</td>
+<td class="numeric">36.00</td>
+<td class="numeric metric-group-end">0.4078</td>
+<td class="numeric"><strong>0.5374</strong></td>
+<td class="numeric"><strong>68.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5631</strong></td>
+<td class="numeric"><span class="runner-up">0.4774</span></td>
+<td class="numeric"><span class="runner-up">64.00</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4948</span></td>
+<td class="numeric">0.2324</td>
+<td class="numeric">24.00</td>
+<td class="numeric metric-group-end">0.3091</td>
+</tr>
+</tbody>
+</table></div></div>
+<div class="paper-result-group"><h3>Visual place recognition</h3>
+<div class="table-wrap" role="region" aria-label="Visual full benchmark results" tabindex="0"><table class="data-table paper-results-table">
+<caption>Visual results across all 19 session pairs</caption>
+<thead><tr><th scope="col" rowspan="2">Site</th><th scope="col" rowspan="2">DB → Query</th><th scope="col" rowspan="2">TCR<sub>VG</sub></th>
+<th scope="colgroup" colspan="3" class="method-group">SALAD</th>
+<th scope="colgroup" colspan="3" class="method-group">UniMPR-C</th>
+<th scope="colgroup" colspan="3" class="method-group">SelaVPR++</th>
+<th scope="colgroup" colspan="3" class="method-group">ImAge</th>
+</tr><tr>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+</tr></thead>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Hall</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.444</td>
+<td class="numeric"><span class="runner-up">0.4935</span></td>
+<td class="numeric">70.83</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5396</span></td>
+<td class="numeric">0.1323</td>
+<td class="numeric">27.08</td>
+<td class="numeric metric-group-end">0.2493</td>
+<td class="numeric"><strong>0.5203</strong></td>
+<td class="numeric"><strong>77.08</strong></td>
+<td class="numeric metric-group-end"><strong>0.5435</strong></td>
+<td class="numeric">0.4422</td>
+<td class="numeric"><span class="runner-up">72.92</span></td>
+<td class="numeric metric-group-end">0.4923</td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">03† → 05</th><td class="numeric change-score">0.464</td>
+<td class="numeric"><strong>0.5847</strong></td>
+<td class="numeric"><strong>62.26</strong></td>
+<td class="numeric metric-group-end"><strong>0.5830</strong></td>
+<td class="numeric">0.1915</td>
+<td class="numeric">32.08</td>
+<td class="numeric metric-group-end">0.2857</td>
+<td class="numeric"><span class="runner-up">0.5176</span></td>
+<td class="numeric"><span class="runner-up">60.38</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5398</span></td>
+<td class="numeric">0.4866</td>
+<td class="numeric">54.72</td>
+<td class="numeric metric-group-end">0.5092</td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.564</td>
+<td class="numeric"><strong>0.2916</strong></td>
+<td class="numeric"><strong>53.85</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3713</span></td>
+<td class="numeric">0.0406</td>
+<td class="numeric">12.82</td>
+<td class="numeric metric-group-end">0.1164</td>
+<td class="numeric"><span class="runner-up">0.2556</span></td>
+<td class="numeric"><strong>53.85</strong></td>
+<td class="numeric metric-group-end"><strong>0.3750</strong></td>
+<td class="numeric">0.2458</td>
+<td class="numeric"><span class="runner-up">46.15</span></td>
+<td class="numeric metric-group-end">0.3226</td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.664</td>
+<td class="numeric"><strong>0.3191</strong></td>
+<td class="numeric"><strong>56.25</strong></td>
+<td class="numeric metric-group-end"><strong>0.4088</strong></td>
+<td class="numeric">0.0649</td>
+<td class="numeric">20.83</td>
+<td class="numeric metric-group-end">0.1361</td>
+<td class="numeric">0.2020</td>
+<td class="numeric"><strong>56.25</strong></td>
+<td class="numeric metric-group-end">0.3089</td>
+<td class="numeric"><span class="runner-up">0.2497</span></td>
+<td class="numeric"><span class="runner-up">45.83</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3348</span></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="11">Office</th>
+<th scope="row" title="Night database session">11† → 12</th><td class="numeric change-score">0.501</td>
+<td class="numeric"><span class="runner-up">0.4953</span></td>
+<td class="numeric"><span class="runner-up">65.38</span></td>
+<td class="numeric metric-group-end">0.5484</td>
+<td class="numeric">0.2186</td>
+<td class="numeric">42.31</td>
+<td class="numeric metric-group-end">0.3288</td>
+<td class="numeric"><strong>0.5670</strong></td>
+<td class="numeric"><strong>69.23</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5862</span></td>
+<td class="numeric">0.4928</td>
+<td class="numeric"><span class="runner-up">65.38</span></td>
+<td class="numeric metric-group-end"><strong>0.6129</strong></td>
+</tr>
+<tr>
+<th scope="row">10 → 12</th><td class="numeric change-score">0.210</td>
+<td class="numeric">0.6528</td>
+<td class="numeric"><strong>92.31</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.6265</span></td>
+<td class="numeric">0.4644</td>
+<td class="numeric">61.54</td>
+<td class="numeric metric-group-end">0.4737</td>
+<td class="numeric"><span class="runner-up">0.6799</span></td>
+<td class="numeric"><span class="runner-up">88.46</span></td>
+<td class="numeric metric-group-end"><strong>0.6452</strong></td>
+<td class="numeric"><strong>0.6983</strong></td>
+<td class="numeric">80.77</td>
+<td class="numeric metric-group-end">0.6133</td>
+</tr>
+<tr>
+<th scope="row">09 → 12</th><td class="numeric change-score">0.180</td>
+<td class="numeric"><span class="runner-up">0.7585</span></td>
+<td class="numeric"><span class="runner-up">86.21</span></td>
+<td class="numeric metric-group-end">0.6944</td>
+<td class="numeric">0.5504</td>
+<td class="numeric">65.52</td>
+<td class="numeric metric-group-end">0.5783</td>
+<td class="numeric">0.7376</td>
+<td class="numeric"><strong>89.66</strong></td>
+<td class="numeric metric-group-end"><strong>0.7119</strong></td>
+<td class="numeric"><strong>0.7780</strong></td>
+<td class="numeric"><span class="runner-up">86.21</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.7000</span></td>
+</tr>
+<tr>
+<th scope="row">08 → 12</th><td class="numeric change-score">0.340</td>
+<td class="numeric"><strong>0.5668</strong></td>
+<td class="numeric"><strong>80.00</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5316</span></td>
+<td class="numeric">0.4248</td>
+<td class="numeric">52.00</td>
+<td class="numeric metric-group-end">0.4348</td>
+<td class="numeric"><span class="runner-up">0.5629</span></td>
+<td class="numeric"><span class="runner-up">76.00</span></td>
+<td class="numeric metric-group-end"><strong>0.5714</strong></td>
+<td class="numeric">0.5583</td>
+<td class="numeric"><strong>80.00</strong></td>
+<td class="numeric metric-group-end">0.5091</td>
+</tr>
+<tr>
+<th scope="row">07 → 12</th><td class="numeric change-score">0.284</td>
+<td class="numeric"><strong>0.5864</strong></td>
+<td class="numeric"><strong>89.29</strong></td>
+<td class="numeric metric-group-end">0.5593</td>
+<td class="numeric">0.3704</td>
+<td class="numeric">57.14</td>
+<td class="numeric metric-group-end">0.4737</td>
+<td class="numeric"><span class="runner-up">0.5844</span></td>
+<td class="numeric"><strong>89.29</strong></td>
+<td class="numeric metric-group-end"><strong>0.5686</strong></td>
+<td class="numeric">0.5690</td>
+<td class="numeric"><span class="runner-up">82.14</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5679</span></td>
+</tr>
+<tr>
+<th scope="row">06 → 12</th><td class="numeric change-score">0.260</td>
+<td class="numeric">0.5475</td>
+<td class="numeric"><strong>84.62</strong></td>
+<td class="numeric metric-group-end">0.5682</td>
+<td class="numeric">0.3144</td>
+<td class="numeric"><span class="runner-up">61.54</span></td>
+<td class="numeric metric-group-end">0.3689</td>
+<td class="numeric"><strong>0.5905</strong></td>
+<td class="numeric"><strong>84.62</strong></td>
+<td class="numeric metric-group-end"><strong>0.6207</strong></td>
+<td class="numeric"><span class="runner-up">0.5505</span></td>
+<td class="numeric"><strong>84.62</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5854</span></td>
+</tr>
+<tr>
+<th scope="row">05 → 12</th><td class="numeric change-score">0.326</td>
+<td class="numeric"><strong>0.5122</strong></td>
+<td class="numeric"><strong>75.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5625</strong></td>
+<td class="numeric">0.2989</td>
+<td class="numeric">56.25</td>
+<td class="numeric metric-group-end">0.3200</td>
+<td class="numeric"><span class="runner-up">0.4884</span></td>
+<td class="numeric">56.25</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5517</span></td>
+<td class="numeric">0.4236</td>
+<td class="numeric"><span class="runner-up">62.50</span></td>
+<td class="numeric metric-group-end">0.4746</td>
+</tr>
+<tr>
+<th scope="row">04 → 12</th><td class="numeric change-score">0.406</td>
+<td class="numeric"><strong>0.6579</strong></td>
+<td class="numeric"><strong>84.21</strong></td>
+<td class="numeric metric-group-end"><strong>0.6102</strong></td>
+<td class="numeric">0.2411</td>
+<td class="numeric">52.63</td>
+<td class="numeric metric-group-end">0.2564</td>
+<td class="numeric"><span class="runner-up">0.6249</span></td>
+<td class="numeric"><span class="runner-up">78.95</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.6038</span></td>
+<td class="numeric">0.5891</td>
+<td class="numeric">68.42</td>
+<td class="numeric metric-group-end">0.5500</td>
+</tr>
+<tr>
+<th scope="row">03 → 12</th><td class="numeric change-score">0.288</td>
+<td class="numeric"><span class="runner-up">0.5547</span></td>
+<td class="numeric"><span class="runner-up">81.82</span></td>
+<td class="numeric metric-group-end"><strong>0.5714</strong></td>
+<td class="numeric">0.3380</td>
+<td class="numeric">63.64</td>
+<td class="numeric metric-group-end">0.4225</td>
+<td class="numeric"><strong>0.5737</strong></td>
+<td class="numeric"><span class="runner-up">81.82</span></td>
+<td class="numeric metric-group-end">0.5667</td>
+<td class="numeric">0.5244</td>
+<td class="numeric"><strong>86.36</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5679</span></td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">02† → 12</th><td class="numeric change-score">0.507</td>
+<td class="numeric"><span class="runner-up">0.4187</span></td>
+<td class="numeric"><span class="runner-up">61.11</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4615</span></td>
+<td class="numeric">0.2129</td>
+<td class="numeric">33.33</td>
+<td class="numeric metric-group-end">0.3077</td>
+<td class="numeric"><strong>0.5483</strong></td>
+<td class="numeric"><strong>72.22</strong></td>
+<td class="numeric metric-group-end"><strong>0.5263</strong></td>
+<td class="numeric">0.3977</td>
+<td class="numeric">55.56</td>
+<td class="numeric metric-group-end">0.4151</td>
+</tr>
+<tr>
+<th scope="row">01 → 12</th><td class="numeric change-score">0.525</td>
+<td class="numeric"><strong>0.4855</strong></td>
+<td class="numeric"><strong>42.86</strong></td>
+<td class="numeric metric-group-end"><strong>0.5455</strong></td>
+<td class="numeric">0.0813</td>
+<td class="numeric">21.43</td>
+<td class="numeric metric-group-end">0.2353</td>
+<td class="numeric">0.3627</td>
+<td class="numeric"><span class="runner-up">35.71</span></td>
+<td class="numeric metric-group-end">0.4706</td>
+<td class="numeric"><span class="runner-up">0.3889</span></td>
+<td class="numeric">28.57</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5405</span></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Quad</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.224</td>
+<td class="numeric"><span class="runner-up">0.3165</span></td>
+<td class="numeric"><span class="runner-up">58.62</span></td>
+<td class="numeric metric-group-end">0.3819</td>
+<td class="numeric">0.2457</td>
+<td class="numeric">50.00</td>
+<td class="numeric metric-group-end">0.3279</td>
+<td class="numeric"><strong>0.3539</strong></td>
+<td class="numeric"><strong>62.07</strong></td>
+<td class="numeric metric-group-end"><strong>0.4029</strong></td>
+<td class="numeric">0.3100</td>
+<td class="numeric">56.90</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3934</span></td>
+</tr>
+<tr>
+<th scope="row">03 → 05</th><td class="numeric change-score">0.313</td>
+<td class="numeric">0.2782</td>
+<td class="numeric"><span class="runner-up">53.57</span></td>
+<td class="numeric metric-group-end">0.3421</td>
+<td class="numeric">0.2331</td>
+<td class="numeric">44.64</td>
+<td class="numeric metric-group-end">0.3382</td>
+<td class="numeric"><span class="runner-up">0.2941</span></td>
+<td class="numeric">51.79</td>
+<td class="numeric metric-group-end"><strong>0.3842</strong></td>
+<td class="numeric"><strong>0.3024</strong></td>
+<td class="numeric"><strong>60.71</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3656</span></td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.294</td>
+<td class="numeric">0.3329</td>
+<td class="numeric"><span class="runner-up">56.14</span></td>
+<td class="numeric metric-group-end">0.4091</td>
+<td class="numeric">0.1895</td>
+<td class="numeric">31.58</td>
+<td class="numeric metric-group-end">0.2826</td>
+<td class="numeric"><strong>0.4017</strong></td>
+<td class="numeric"><strong>64.91</strong></td>
+<td class="numeric metric-group-end"><strong>0.4480</strong></td>
+<td class="numeric"><span class="runner-up">0.3524</span></td>
+<td class="numeric"><strong>64.91</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4295</span></td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.403</td>
+<td class="numeric">0.4442</td>
+<td class="numeric"><span class="runner-up">52.00</span></td>
+<td class="numeric metric-group-end">0.5472</td>
+<td class="numeric">0.3803</td>
+<td class="numeric">40.00</td>
+<td class="numeric metric-group-end">0.4444</td>
+<td class="numeric"><strong>0.6250</strong></td>
+<td class="numeric"><strong>68.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.6383</strong></td>
+<td class="numeric"><span class="runner-up">0.5939</span></td>
+<td class="numeric"><strong>68.00</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5934</span></td>
+</tr>
+</tbody>
+</table></div></div>
+<div class="paper-result-group"><h3>Fusion place recognition</h3>
+<div class="table-wrap" role="region" aria-label="Fusion full benchmark results" tabindex="0"><table class="data-table paper-results-table">
+<caption>Fusion results across all 19 session pairs</caption>
+<thead><tr><th scope="col" rowspan="2">Site</th><th scope="col" rowspan="2">DB → Query</th><th scope="col" rowspan="2">TCR<sub>VG</sub></th>
+<th scope="colgroup" colspan="3" class="method-group">SALAD+CASSPR</th>
+<th scope="colgroup" colspan="3" class="method-group">UniMPR-LC</th>
+<th scope="colgroup" colspan="3" class="method-group">MinkLoc++</th>
+<th scope="colgroup" colspan="3" class="method-group">UMF</th>
+</tr><tr>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+<th scope="col" class="numeric">AUC</th><th scope="col" class="numeric">R@1 (%)</th><th scope="col" class="numeric metric-group-end">F1<sub>max</sub></th>
+</tr></thead>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Hall</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.444</td>
+<td class="numeric"><strong>0.5452</strong></td>
+<td class="numeric"><strong>77.08</strong></td>
+<td class="numeric metric-group-end"><strong>0.5753</strong></td>
+<td class="numeric">0.1240</td>
+<td class="numeric"><span class="runner-up">50.00</span></td>
+<td class="numeric metric-group-end">0.2091</td>
+<td class="numeric">0.1325</td>
+<td class="numeric">27.08</td>
+<td class="numeric metric-group-end">0.2288</td>
+<td class="numeric"><span class="runner-up">0.1903</span></td>
+<td class="numeric">29.17</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.2406</span></td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">03† → 05</th><td class="numeric change-score">0.464</td>
+<td class="numeric"><strong>0.6163</strong></td>
+<td class="numeric"><strong>62.26</strong></td>
+<td class="numeric metric-group-end"><strong>0.5907</strong></td>
+<td class="numeric">0.1412</td>
+<td class="numeric"><span class="runner-up">56.60</span></td>
+<td class="numeric metric-group-end">0.2640</td>
+<td class="numeric">0.2361</td>
+<td class="numeric">39.62</td>
+<td class="numeric metric-group-end">0.2978</td>
+<td class="numeric"><span class="runner-up">0.3067</span></td>
+<td class="numeric">43.40</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3443</span></td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.564</td>
+<td class="numeric"><strong>0.3261</strong></td>
+<td class="numeric"><strong>53.85</strong></td>
+<td class="numeric metric-group-end"><strong>0.3708</strong></td>
+<td class="numeric">0.0897</td>
+<td class="numeric"><span class="runner-up">23.08</span></td>
+<td class="numeric metric-group-end">0.1408</td>
+<td class="numeric"><span class="runner-up">0.1041</span></td>
+<td class="numeric">17.95</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.1739</span></td>
+<td class="numeric">0.0786</td>
+<td class="numeric">20.51</td>
+<td class="numeric metric-group-end">0.1463</td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.664</td>
+<td class="numeric"><strong>0.3435</strong></td>
+<td class="numeric"><strong>54.17</strong></td>
+<td class="numeric metric-group-end"><strong>0.4261</strong></td>
+<td class="numeric"><span class="runner-up">0.1092</span></td>
+<td class="numeric"><span class="runner-up">33.33</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.2093</span></td>
+<td class="numeric">0.0555</td>
+<td class="numeric">16.67</td>
+<td class="numeric metric-group-end">0.1067</td>
+<td class="numeric">0.0508</td>
+<td class="numeric">20.83</td>
+<td class="numeric metric-group-end">0.1058</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="11">Office</th>
+<th scope="row" title="Night database session">11† → 12</th><td class="numeric change-score">0.501</td>
+<td class="numeric"><span class="runner-up">0.5243</span></td>
+<td class="numeric"><span class="runner-up">69.23</span></td>
+<td class="numeric metric-group-end"><strong>0.5714</strong></td>
+<td class="numeric"><strong>0.5450</strong></td>
+<td class="numeric"><strong>80.77</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5161</span></td>
+<td class="numeric">0.2340</td>
+<td class="numeric">46.15</td>
+<td class="numeric metric-group-end">0.3500</td>
+<td class="numeric">0.2717</td>
+<td class="numeric">38.46</td>
+<td class="numeric metric-group-end">0.3774</td>
+</tr>
+<tr>
+<th scope="row">10 → 12</th><td class="numeric change-score">0.210</td>
+<td class="numeric"><strong>0.6661</strong></td>
+<td class="numeric"><strong>92.31</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.6098</span></td>
+<td class="numeric"><span class="runner-up">0.5933</span></td>
+<td class="numeric"><span class="runner-up">76.92</span></td>
+<td class="numeric metric-group-end"><strong>0.6197</strong></td>
+<td class="numeric">0.3196</td>
+<td class="numeric">61.54</td>
+<td class="numeric metric-group-end">0.4146</td>
+<td class="numeric">0.5086</td>
+<td class="numeric">46.15</td>
+<td class="numeric metric-group-end">0.5357</td>
+</tr>
+<tr>
+<th scope="row">09 → 12</th><td class="numeric change-score">0.180</td>
+<td class="numeric"><strong>0.7688</strong></td>
+<td class="numeric"><strong>86.21</strong></td>
+<td class="numeric metric-group-end"><strong>0.6875</strong></td>
+<td class="numeric"><span class="runner-up">0.6937</span></td>
+<td class="numeric"><span class="runner-up">79.31</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.6462</span></td>
+<td class="numeric">0.4044</td>
+<td class="numeric">58.62</td>
+<td class="numeric metric-group-end">0.5172</td>
+<td class="numeric">0.4764</td>
+<td class="numeric">65.52</td>
+<td class="numeric metric-group-end">0.5915</td>
+</tr>
+<tr>
+<th scope="row">08 → 12</th><td class="numeric change-score">0.340</td>
+<td class="numeric"><strong>0.5754</strong></td>
+<td class="numeric"><strong>80.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5405</strong></td>
+<td class="numeric"><span class="runner-up">0.5135</span></td>
+<td class="numeric"><span class="runner-up">72.00</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4810</span></td>
+<td class="numeric">0.2802</td>
+<td class="numeric">56.00</td>
+<td class="numeric metric-group-end">0.3797</td>
+<td class="numeric">0.2652</td>
+<td class="numeric">48.00</td>
+<td class="numeric metric-group-end">0.3600</td>
+</tr>
+<tr>
+<th scope="row">07 → 12</th><td class="numeric change-score">0.284</td>
+<td class="numeric"><strong>0.6010</strong></td>
+<td class="numeric"><strong>89.29</strong></td>
+<td class="numeric metric-group-end"><strong>0.5872</strong></td>
+<td class="numeric"><span class="runner-up">0.4808</span></td>
+<td class="numeric"><span class="runner-up">75.00</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5057</span></td>
+<td class="numeric">0.2497</td>
+<td class="numeric">42.86</td>
+<td class="numeric metric-group-end">0.3214</td>
+<td class="numeric">0.3000</td>
+<td class="numeric">46.43</td>
+<td class="numeric metric-group-end">0.3860</td>
+</tr>
+<tr>
+<th scope="row">06 → 12</th><td class="numeric change-score">0.260</td>
+<td class="numeric"><strong>0.5653</strong></td>
+<td class="numeric"><strong>84.62</strong></td>
+<td class="numeric metric-group-end"><strong>0.5882</strong></td>
+<td class="numeric"><span class="runner-up">0.5127</span></td>
+<td class="numeric"><span class="runner-up">76.92</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5476</span></td>
+<td class="numeric">0.2598</td>
+<td class="numeric">38.46</td>
+<td class="numeric metric-group-end">0.3600</td>
+<td class="numeric">0.3582</td>
+<td class="numeric">46.15</td>
+<td class="numeric metric-group-end">0.3934</td>
+</tr>
+<tr>
+<th scope="row">05 → 12</th><td class="numeric change-score">0.326</td>
+<td class="numeric"><strong>0.5371</strong></td>
+<td class="numeric"><strong>75.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5806</strong></td>
+<td class="numeric"><span class="runner-up">0.4122</span></td>
+<td class="numeric"><span class="runner-up">56.25</span></td>
+<td class="numeric metric-group-end">0.4103</td>
+<td class="numeric">0.2678</td>
+<td class="numeric">31.25</td>
+<td class="numeric metric-group-end">0.3721</td>
+<td class="numeric">0.3639</td>
+<td class="numeric">43.75</td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4667</span></td>
+</tr>
+<tr>
+<th scope="row">04 → 12</th><td class="numeric change-score">0.406</td>
+<td class="numeric"><strong>0.6582</strong></td>
+<td class="numeric"><strong>84.21</strong></td>
+<td class="numeric metric-group-end"><strong>0.5862</strong></td>
+<td class="numeric"><span class="runner-up">0.4884</span></td>
+<td class="numeric"><span class="runner-up">73.68</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5500</span></td>
+<td class="numeric">0.3529</td>
+<td class="numeric">63.16</td>
+<td class="numeric metric-group-end">0.4118</td>
+<td class="numeric">0.2441</td>
+<td class="numeric">31.58</td>
+<td class="numeric metric-group-end">0.3860</td>
+</tr>
+<tr>
+<th scope="row">03 → 12</th><td class="numeric change-score">0.288</td>
+<td class="numeric"><strong>0.5636</strong></td>
+<td class="numeric"><strong>81.82</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5714</span></td>
+<td class="numeric"><span class="runner-up">0.5589</span></td>
+<td class="numeric"><span class="runner-up">77.27</span></td>
+<td class="numeric metric-group-end"><strong>0.6133</strong></td>
+<td class="numeric">0.3020</td>
+<td class="numeric">54.55</td>
+<td class="numeric metric-group-end">0.4138</td>
+<td class="numeric">0.3120</td>
+<td class="numeric">68.18</td>
+<td class="numeric metric-group-end">0.3830</td>
+</tr>
+<tr>
+<th scope="row" title="Night database session">02† → 12</th><td class="numeric change-score">0.507</td>
+<td class="numeric"><strong>0.4549</strong></td>
+<td class="numeric"><strong>61.11</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4865</span></td>
+<td class="numeric"><span class="runner-up">0.4239</span></td>
+<td class="numeric"><strong>61.11</strong></td>
+<td class="numeric metric-group-end"><strong>0.4878</strong></td>
+<td class="numeric">0.1324</td>
+<td class="numeric"><span class="runner-up">27.78</span></td>
+<td class="numeric metric-group-end">0.2264</td>
+<td class="numeric">0.1870</td>
+<td class="numeric">11.11</td>
+<td class="numeric metric-group-end">0.3182</td>
+</tr>
+<tr>
+<th scope="row">01 → 12</th><td class="numeric change-score">0.525</td>
+<td class="numeric"><strong>0.4764</strong></td>
+<td class="numeric"><strong>42.86</strong></td>
+<td class="numeric metric-group-end"><strong>0.5405</strong></td>
+<td class="numeric"><span class="runner-up">0.2696</span></td>
+<td class="numeric"><span class="runner-up">28.57</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3448</span></td>
+<td class="numeric">0.1061</td>
+<td class="numeric">21.43</td>
+<td class="numeric metric-group-end">0.2800</td>
+<td class="numeric">0.1186</td>
+<td class="numeric">14.29</td>
+<td class="numeric metric-group-end">0.1951</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<th scope="rowgroup" rowspan="4">Quad</th>
+<th scope="row">04 → 05</th><td class="numeric change-score">0.224</td>
+<td class="numeric"><span class="runner-up">0.3491</span></td>
+<td class="numeric"><span class="runner-up">65.52</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4176</span></td>
+<td class="numeric"><strong>0.5403</strong></td>
+<td class="numeric"><strong>70.69</strong></td>
+<td class="numeric metric-group-end"><strong>0.5786</strong></td>
+<td class="numeric">0.1978</td>
+<td class="numeric">37.93</td>
+<td class="numeric metric-group-end">0.2478</td>
+<td class="numeric">0.1582</td>
+<td class="numeric">32.76</td>
+<td class="numeric metric-group-end">0.2564</td>
+</tr>
+<tr>
+<th scope="row">03 → 05</th><td class="numeric change-score">0.313</td>
+<td class="numeric"><span class="runner-up">0.2888</span></td>
+<td class="numeric"><strong>58.93</strong></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.3425</span></td>
+<td class="numeric"><strong>0.3785</strong></td>
+<td class="numeric"><span class="runner-up">53.57</span></td>
+<td class="numeric metric-group-end"><strong>0.4568</strong></td>
+<td class="numeric">0.1330</td>
+<td class="numeric">21.43</td>
+<td class="numeric metric-group-end">0.2378</td>
+<td class="numeric">0.1065</td>
+<td class="numeric">26.79</td>
+<td class="numeric metric-group-end">0.2051</td>
+</tr>
+<tr>
+<th scope="row">02 → 05</th><td class="numeric change-score">0.294</td>
+<td class="numeric"><span class="runner-up">0.3575</span></td>
+<td class="numeric"><span class="runner-up">56.14</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.4186</span></td>
+<td class="numeric"><strong>0.4021</strong></td>
+<td class="numeric"><strong>61.40</strong></td>
+<td class="numeric metric-group-end"><strong>0.5000</strong></td>
+<td class="numeric">0.1334</td>
+<td class="numeric">17.54</td>
+<td class="numeric metric-group-end">0.2286</td>
+<td class="numeric">0.1187</td>
+<td class="numeric">28.07</td>
+<td class="numeric metric-group-end">0.2683</td>
+</tr>
+<tr>
+<th scope="row">01 → 05</th><td class="numeric change-score">0.403</td>
+<td class="numeric"><span class="runner-up">0.4970</span></td>
+<td class="numeric"><span class="runner-up">52.00</span></td>
+<td class="numeric metric-group-end"><span class="runner-up">0.5684</span></td>
+<td class="numeric"><strong>0.5751</strong></td>
+<td class="numeric"><strong>68.00</strong></td>
+<td class="numeric metric-group-end"><strong>0.5743</strong></td>
+<td class="numeric">0.2512</td>
+<td class="numeric">28.00</td>
+<td class="numeric metric-group-end">0.3185</td>
+<td class="numeric">0.3302</td>
+<td class="numeric">28.00</td>
+<td class="numeric metric-group-end">0.4063</td>
+</tr>
+</tbody>
+</table></div></div>
+    </details>
   </section>
 
   <section id="cross-modality" class="content-section" aria-labelledby="cross-title">
     <h2 id="cross-title">Cross-modality analysis</h2>
-    <div class="figure-pair analysis-pair"><figure class="content-figure "><a href="./assets/images/benchmark/office-pooled-recall.png" target="_blank" rel="noopener" aria-label="Enlarge: Pooled Recall@1 for 12 methods in Office"><img src="./assets/images/benchmark/office-pooled-recall.png" width="2078" height="1181" loading="lazy" alt="Pooled Recall@1 for 12 methods in Office"></a><figcaption><strong>Office, all 11 databases.</strong> Twelve methods evaluated over 249 eligible query trials.</figcaption></figure><figure class="content-figure "><a href="./assets/images/benchmark/unimpr-modalities.png" target="_blank" rel="noopener" aria-label="Enlarge: UniMPR LiDAR, camera, and joint-input pooled Recall@1 across the three sites"><img src="./assets/images/benchmark/unimpr-modalities.png" width="2078" height="1299" loading="lazy" alt="UniMPR LiDAR, camera, and joint-input pooled Recall@1 across the three sites"></a><figcaption><strong>UniMPR input modalities.</strong> The same pretrained checkpoint; 188, 249, and 196 eligible trials in Hall, Office, and Quad.</figcaption></figure></div>
-    <div class="prose-columns analysis-copy">
-      <div><h3>Strong visual features, room for fusion</h3><p>In Office, the DINOv2-based visual methods generally outperform the evaluated dedicated fusion approaches. The simple, equally weighted SALAD+CASSPR combination achieves the highest pooled R@1.</p></div>
-      <div><h3>Complementary observations</h3><p>With the same pretrained UniMPR checkpoint, joint LiDAR–camera input outperforms both unimodal modes at every site. The relative strengths of the individual modalities vary across environments.</p></div>
+    <h3>Modality comparison</h3>
+    <p>Strong visual baselines and simple score-level fusion perform well in Office. Across all three sites, UniMPR's joint LiDAR–camera input improves on both of its unimodal configurations.</p>
+    <div class="figure-pair analysis-pair">
+      <figure class="content-figure"><a href="./assets/images/benchmark/office-pooled-recall.png" target="_blank" rel="noopener" aria-label="Enlarge: Pooled Recall@1 for 12 methods in Office"><img class="" src="./assets/images/benchmark/office-pooled-recall.png" width="2078" height="1181" loading="lazy" alt="Pooled Recall@1 for 12 methods in Office"></a><figcaption>Office · Pooled Recall@1</figcaption></figure>
+      <figure class="content-figure"><a href="./assets/images/benchmark/unimpr-modalities.png" target="_blank" rel="noopener" aria-label="Enlarge: UniMPR LiDAR, camera, and joint-input Recall@1 across Hall, Office, and Quad"><img class="" src="./assets/images/benchmark/unimpr-modalities.png" width="2078" height="1299" loading="lazy" alt="UniMPR LiDAR, camera, and joint-input Recall@1 across Hall, Office, and Quad"></a><figcaption>UniMPR · Input modality comparison</figcaption></figure>
     </div>
-    <p class="figure-note">Pooled R@1 sums correct retrievals and eligible query trials across session pairs, rather than averaging pair percentages. A query evaluated against different databases contributes separate trials.</p>
-  </section>
-
-  <section id="qualitative" class="content-section" aria-labelledby="qualitative-title">
-    <h2 id="qualitative-title">Retrieval examples</h2>
-    <p>Top-1 correspondences show how errors differ between LiDAR, visual, and fusion methods. Each column is a site; rows show CASSPR, SALAD, and UniMPR-LC.</p>
-    <figure class="content-figure matches-figure"><a href="./assets/images/benchmark/pr-matches.png" target="_blank" rel="noopener" aria-label="Enlarge: Top-1 retrieval correspondences: CASSPR, SALAD, and UniMPR-LC across Hall, Office, and Quad"><img src="./assets/images/benchmark/pr-matches.png" width="2600" height="1683" loading="lazy" alt="Top-1 retrieval correspondences: CASSPR, SALAD, and UniMPR-LC across Hall, Office, and Quad"></a></figure>
-    <p class="figure-note">Hall: 04 → 05. Office: 10 → 12. Quad: 04 → 05. Green and red lines indicate correct and incorrect matches. Black and gray lines show query and database trajectories. Select the figure to inspect the full-resolution image.</p>
-  </section>
-
-  <section id="temporal-change" class="content-section" aria-labelledby="change-title">
-    <h2 id="change-title">Temporal change analysis</h2>
-    <p class="section-lead">Elapsed time alone does not describe how much a construction site has changed. The <strong>Visually Grounded Temporal Change Ratio (TCR<sub>VG</sub>)</strong> combines geometric change with appearance differences in geometrically matched regions.</p>
-    <div class="change-explainer">
-      <div><span class="step-number">01</span><h3>Geometry</h3><p>Count an unmatched surface unit as changed when the other session observed its location as free space.</p></div>
-      <div><span class="step-number">02</span><h3>Appearance</h3><p>Compare DINOv2 features for matched units visible in calibrated images of both sessions.</p></div>
-      <div><span class="step-number">03</span><h3>Combine both directions</h3><p>Combine the geometric and appearance terms, then average A → B and B → A.</p></div>
-    </div>
-    <div class="formula-line">TCR<sub>VG</sub><sup>A→B</sup> = r<sub>geo</sub> + (1 − r<sub>geo</sub>) r<sub>app</sub></div>
-    <div class="figure-controls" id="change-controls" hidden><label for="change-modality">Change-analysis modality<select id="change-modality"><option value="lidar">LiDAR</option><option value="visual">Visual</option><option value="fusion">Fusion</option></select></label></div>
-    <div class="switchable-figures" id="change-figures"><figure class="content-figure " data-modality="lidar"><a href="./assets/images/benchmark/hall-lidar-change.png" target="_blank" rel="noopener" aria-label="Enlarge: LiDAR Recall@1 versus TCR_VG for the four Hall session pairs"><img src="./assets/images/benchmark/hall-lidar-change.png" width="2078" height="1535" loading="lazy" alt="LiDAR Recall@1 versus TCR_VG for the four Hall session pairs"></a><figcaption><strong>Hall · LiDAR.</strong> R@1 against TCR<sub>VG</sub>. Lines connect observed session pairs as visual guides; they are not fitted trends.</figcaption></figure>
-<figure class="content-figure " data-modality="visual"><a href="./assets/images/benchmark/hall-visual-change.png" target="_blank" rel="noopener" aria-label="Enlarge: Visual Recall@1 versus TCR_VG for the four Hall session pairs"><img src="./assets/images/benchmark/hall-visual-change.png" width="2078" height="1535" loading="lazy" alt="Visual Recall@1 versus TCR_VG for the four Hall session pairs"></a><figcaption><strong>Hall · Visual.</strong> R@1 against TCR<sub>VG</sub>. Lines connect observed session pairs as visual guides; they are not fitted trends.</figcaption></figure>
-<figure class="content-figure " data-modality="fusion"><a href="./assets/images/benchmark/hall-fusion-change.png" target="_blank" rel="noopener" aria-label="Enlarge: Fusion Recall@1 versus TCR_VG for the four Hall session pairs"><img src="./assets/images/benchmark/hall-fusion-change.png" width="2078" height="1535" loading="lazy" alt="Fusion Recall@1 versus TCR_VG for the four Hall session pairs"></a><figcaption><strong>Hall · Fusion.</strong> R@1 against TCR<sub>VG</sub>. Lines connect observed session pairs as visual guides; they are not fitted trends.</figcaption></figure></div>
-    <h3 class="spaced-heading">Relationship with recognition performance</h3>
-    <p>Across 19 session pairs, TCR<sub>VG</sub> has stronger negative correlations with visual and fusion R@1 than geometry-only measures. For LiDAR, TCR<sub>sym</sub> and TCR<sub>VG</sub> are comparable. Correlations are computed after subtracting each site's mean from both the change score and R@1.</p>
-    <div class="table-wrap" role="region" aria-label="Change metric correlations" tabindex="0"><table class="data-table correlation-table">
-      <caption>Within-site Pearson correlation between change metrics and R@1</caption><thead><tr><th scope="col">Modality</th><th scope="col">Method</th><th scope="col" class="numeric">TCR</th><th scope="col" class="numeric">TCR<sub>sym</sub></th><th scope="col" class="numeric">TCR<sub>VG</sub></th></tr></thead>
-      <tbody>
-        <tr><td>LiDAR</td><th scope="row">UniMPR-L</th><td class="numeric">−0.27</td><td class="numeric"><strong>−0.50</strong></td><td class="numeric">−0.45</td></tr>
-        <tr><td>LiDAR</td><th scope="row">CASSPR</th><td class="numeric">−0.23</td><td class="numeric">−0.42</td><td class="numeric"><strong>−0.53</strong></td></tr>
-        <tr><td>Visual</td><th scope="row">SALAD</th><td class="numeric">−0.26</td><td class="numeric">−0.43</td><td class="numeric"><strong>−0.83</strong></td></tr>
-        <tr><td>Visual</td><th scope="row">SelaVPR++</th><td class="numeric">−0.33</td><td class="numeric">−0.37</td><td class="numeric"><strong>−0.64</strong></td></tr>
-        <tr><td>Fusion</td><th scope="row">SALAD+CASSPR</th><td class="numeric">−0.28</td><td class="numeric">−0.50</td><td class="numeric"><strong>−0.83</strong></td></tr>
-        <tr><td>Fusion</td><th scope="row">UniMPR-LC</th><td class="numeric">−0.29</td><td class="numeric">−0.49</td><td class="numeric"><strong>−0.56</strong></td></tr>
-      </tbody>
-    </table></div>
-    <p class="table-note">The strongest negative correlation in each row is bold. Methods are the two strongest per modality in pooled Office R@1. A change score describes relative variation, rather than a guaranteed or causal prediction of retrieval performance.</p>
-    <details class="technical-details"><summary>TCR<sub>VG</sub> computation details</summary>
-      <p>Session maps are voxelized at 0.2 m in Hall and 0.5 m outdoors, using voxels with at least three points. Geometric matching thresholds are 0.15 m and 0.30 m. An unmatched unit requires free-space evidence from at least five rays to count as geometric change; unobserved locations are excluded.</p>
-      <p>For matched, visible units, DINOv2 ViT-S/14 patch features are compared using cosine distance. An even/odd-frame reference provides a per-site median q<sub>50</sub> and 95th percentile τ<sub>a</sub>. Appearance distances are rescaled as clip((d − q<sub>50</sub>) / (τ<sub>a</sub> − q<sub>50</sub>), 0, 1) and averaged. The final score averages the combined terms in both directions.</p>
-      <p>Because the reference has milder viewpoint differences than cross-session observations, the score retains a floor of about 0.2 even for a one-day pair. It should be interpreted as a relative measure.</p>
-    </details>
+    <h3 class="spaced-heading" id="qualitative">Retrieval examples</h3>
+    <figure class="content-figure matches-figure"><a href="./assets/images/benchmark/pr-matches.png" target="_blank" rel="noopener" aria-label="Enlarge: Top-1 retrieval correspondences for CASSPR, SALAD, and UniMPR-LC across Hall, Office, and Quad"><img class="" src="./assets/images/benchmark/pr-matches.png" width="2600" height="1683" loading="lazy" alt="Top-1 retrieval correspondences for CASSPR, SALAD, and UniMPR-LC across Hall, Office, and Quad"></a></figure>
   </section>
 </main>
 <footer class="site-footer"><span>ConPR++</span><span>Place recognition in changing construction environments</span></footer>

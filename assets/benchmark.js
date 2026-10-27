@@ -61,25 +61,31 @@
       body.append(tr);
     }
     table.replaceChildren(caption, head, body);
-    document.getElementById('result-status').textContent = `${site.value} · ${modality.value} · ${metrics[metric.value]} · ${databases.length} session pairs`;
-    document.getElementById('result-scope').textContent = metric.value === 'r1'
-      ? 'R@1 is evaluated on queries with at least one positive database sample (Q+). Values are percentages; higher is better.'
-      : `${metrics[metric.value]} is evaluated over all query–database pairs, including queries without positives. Values are on a 0–1 scale; higher is better.`;
+    document.getElementById('result-status').textContent = `${modality.value} · ${site.value} · ${metrics[metric.value]}`;
   }
-  [site, modality, metric].forEach(control => control.addEventListener('change', renderResults));
-  renderResults();
-  document.getElementById('result-controls').hidden = false;
 
-  function setupFigures(prefix) {
-    const select = document.getElementById(`${prefix}-modality`);
-    const figures = document.querySelectorAll(`#${prefix}-figures [data-modality]`);
-    function update() {
-      figures.forEach(figure => { figure.hidden = figure.dataset.modality !== select.value; });
-    }
-    select.addEventListener('change', update);
-    update();
-    document.getElementById(`${prefix}-controls`).hidden = false;
+  function renderPlots() {
+    const mode = modality.value.toLowerCase();
+    const plots = [
+      ['pr', `office-${mode}-pr.png`, `${modality.value} precision–recall curves in Office, database 10 and 07 to query 12`],
+      ['change', `hall-${mode}-change.png`, `${modality.value} Recall@1 versus TCR_VG across the four Hall session pairs`],
+    ];
+    plots.forEach(([prefix, filename, description]) => {
+      const image = document.getElementById(`${prefix}-image`);
+      const link = document.getElementById(`${prefix}-image-link`);
+      image.src = `./assets/images/benchmark/${filename}`;
+      image.alt = description;
+      link.href = image.getAttribute('src');
+      link.setAttribute('aria-label', `Enlarge: ${description}`);
+    });
   }
-  setupFigures('pr');
-  setupFigures('change');
+
+  [site, metric].forEach(control => control.addEventListener('change', renderResults));
+  modality.addEventListener('change', () => {
+    renderResults();
+    renderPlots();
+  });
+  renderResults();
+  renderPlots();
+  document.getElementById('result-controls').hidden = false;
 })();
