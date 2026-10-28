@@ -8,7 +8,7 @@ from pathlib import Path
 from conpr_player import backend
 from conpr_player.environment import ROS1,ROS_DISTRO
 from conpr_player.dataset import Dataset
-from conpr_player.messages import MessageFactory,Options,TYPES
+from conpr_player.messages import MessageFactory,Options,TYPES,TransformStamped,header
 from conpr_player.ros import PlayerNode
 from conpr_player.controller import Playback
 from conpr_player.bag import export
@@ -43,6 +43,31 @@ def fingerprint(topic,msg,t):
     return topic,int(t),hashlib.sha256(payload).hexdigest()
 def ns(t):return t.to_nsec() if ROS1 else t.sec*1_000_000_000+t.nanosec
 
+def fingerprints(topic,msg,t):
+    # Live GT TF can batch several original transforms in one message. Compare
+    # each stamped transform, without depending on the transport batch layout.
+    if hasattr(msg,'transforms'):
+        return [fingerprint(topic,tf,ns(tf.header.stamp)) for tf in msg.transforms]
+    return [fingerprint(topic,msg,t)]
+
+def expected_live_records(ds,rows,end):
+    expected=collections.Counter(record for topic,msg,t in rows if topic!='/tf'
+                                 for record in fingerprints(topic,msg,t))
+    lo,hi=ds.bounds(0,end)
+    start=ds.events[lo].stamp
+    limit=ds.events[hi-1].stamp+500_000_000
+    stamps=[int(t) for t in ds.gt_ts if int(t)<=limit]
+    predecessors=[t for t in stamps if t<=start]
+    first=predecessors[-1] if predecessors else start
+    for t in stamps:
+        if t<first:continue
+        pose=ds.gt[t]
+        tf=TransformStamped(header=header(t,'conpr_gt_world'),child_frame_id='conpr_imu')
+        tf.transform.translation.x,tf.transform.translation.y,tf.transform.translation.z=map(float,pose[:3])
+        tf.transform.rotation.x,tf.transform.rotation.y,tf.transform.rotation.z,tf.transform.rotation.w=map(float,pose[3:7])
+        expected[fingerprint('/tf',tf,t)]+=1
+    return expected
+
 def expected_messages(ds,options,end):
     f=MessageFactory(ds,options);lo,hi=ds.bounds(0,end);rows=[]
     for k,m in f.reset(ds.events[lo].stamp):rows.append((f.topic(k),m,ds.events[lo].stamp))
@@ -75,7 +100,7 @@ class Receiver:
             name=NAMES[key];topic=name if name.startswith('/') else '/'+(options.namespace+'/' if options.namespace else '')+name
             def cb(msg,topic=topic,key=key):
                 t=ns(msg.clock) if key=='clock' else ns(msg.transforms[0].header.stamp) if key in ('tf','static') else ns(msg.header.stamp)
-                with self.lock:self.rows.append(fingerprint(topic,msg,t))
+                with self.lock:self.rows.extend(fingerprints(topic,msg,t))
             if ROS1:self.subs.append(rospy.Subscriber(topic,cls,cb,queue_size=10000))
             else:
                 qos=QoSProfile(depth=10000,reliability=ReliabilityPolicy.RELIABLE,durability=DurabilityPolicy.TRANSIENT_LOCAL if key in ('static','path') else DurabilityPolicy.VOLATILE)
@@ -106,7 +131,9 @@ def main():
         for site,session in [('Hall','260905'),('Office','230531'),('Quad','261006')]:
             print('TEST',ROS_DISTRO,site,flush=True)
             ds=Dataset(Path(args.root)/site/session);options=Options(gt=True,gt_tf=True,custom=True,namespace='conpr_probe')
-            expected=expected_messages(ds,options,args.end);want=collections.Counter(fingerprint(*row) for row in expected)
+            expected=expected_messages(ds,options,args.end)
+            want=collections.Counter(record for row in expected for record in fingerprints(*row))
+            live_want=expected_live_records(ds,expected,args.end)
             # Independently check representative payloads against source bytes/fields.
             f=MessageFactory(ds,options)
             for sensor in ('cam','livox','imu','gt'):
@@ -130,9 +157,9 @@ def main():
             try:
                 time.sleep(1.5);node.reset(ctl.position);ctl.play();wait(lambda:ctl.state in ('FINISHED','ERROR'))
                 assert ctl.state=='FINISHED',ctl.snapshot()
-                wait(lambda:len(receiver.rows)>=len(expected))
+                wait(lambda:len(receiver.rows)>=sum(live_want.values()))
                 actual=collections.Counter(receiver.rows)
-                assert actual==want,dict(missing=list((want-actual).items())[:3],extra=list((actual-want).items())[:3])
+                assert actual==live_want,dict(missing=list((live_want-actual).items())[:3],extra=list((actual-live_want).items())[:3])
                 live_count=len(receiver.rows)
             finally:
                 ctl.close();executor.shutdown(timeout_sec=3);thread.join(3);node.destroy_node();receiver.close()
@@ -141,7 +168,8 @@ def main():
             if ROS1:
                 import rosbag
                 with rosbag.Bag(str(bag)) as reader:
-                    actual=collections.Counter(fingerprint(topic,m,t.to_nsec()) for topic,m,t in reader.read_messages())
+                    actual=collections.Counter(record for topic,m,t in reader.read_messages()
+                                               for record in fingerprints(topic,m,t.to_nsec()))
             else:
                 import rosbag2_py
                 from rclpy.serialization import deserialize_message
@@ -149,24 +177,37 @@ def main():
                 reader=rosbag2_py.SequentialReader();reader.open(rosbag2_py.StorageOptions(uri=str(bag),storage_id='mcap'),rosbag2_py.ConverterOptions('',''))
                 types={x.name:get_message(x.type) for x in reader.get_all_topics_and_types()};actual=collections.Counter()
                 while reader.has_next():
-                    topic,data,t=reader.read_next();actual[fingerprint(topic,deserialize_message(data,types[topic]),t)]+=1
+                    topic,data,t=reader.read_next()
+                    actual.update(fingerprints(topic,deserialize_message(data,types[topic]),t))
                 del reader
             assert actual==want,('bag roundtrip',site)
             # Late-joining latched/transient Path subscribers may receive only the final
             # path from fast bag replay; validate all sensor/clock/pose/TF samples exactly.
             receiver=Receiver(options);time.sleep(.5)
-            cmd=['rosbag','play',str(bag),'--delay=2','--rate=1'] if ROS1 else ['ros2','bag','play',str(bag),'--delay','2','--rate','1']
+            cmd=['rosbag','play',str(bag),'--delay=0.2','--wait-for-subscribers','--rate=1'] if ROS1 else ['ros2','bag','play',str(bag),'--delay','2','--rate','1']
             try:
                 proc=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=40)
                 (out/(site+'_bag_play.log')).write_text(proc.stdout);assert proc.returncode==0,proc.stdout
                 time.sleep(1)
                 excluded={'/conpr_probe/conpr/gt/path','/tf_static'}
+                if ROS1:
+                    # rosbag's TimePublisher advertises /clock with queue size 1,
+                    # even without --clock. Repeated identical clock values can
+                    # coalesce. Require every distinct original value, in order;
+                    # sensor/pose/TF multiplicity remains strictly checked below.
+                    clocks=[x for x in receiver.rows if x[0]=='/clock']
+                    assert set(clocks)=={x for x in want if x[0]=='/clock'},'Clock values differ'
+                    assert [x[1] for x in clocks]==sorted(x[1] for x in clocks),'Clock went backwards'
+                    excluded.add('/clock')
                 sensor_want=collections.Counter({k:v for k,v in want.items() if k[0] not in excluded})
                 sensor_got=collections.Counter(x for x in receiver.rows if x[0] not in excluded)
-                assert sensor_got==sensor_want,dict(stage='bag play',missing=list((sensor_want-sensor_got).items())[:3],extra=list((sensor_got-sensor_want).items())[:3])
+                assert sensor_got==sensor_want,dict(stage='bag play',missing=list((sensor_want-sensor_got).items())[:3],extra=list((sensor_got-sensor_want).items())[:3],
+                    missing_by_topic=dict(collections.Counter(k[0] for k in (sensor_want-sensor_got).elements())),
+                    extra_by_topic=dict(collections.Counter(k[0] for k in (sensor_got-sensor_want).elements())),
+                    missing_unique_clock_stamps=sorted({k[1] for k in sensor_want if k[0]=='/clock'}-{k[1] for k in sensor_got if k[0]=='/clock'}))
                 assert any(x[0]=='/tf_static' for x in receiver.rows),'Static TF missing in bag playback'
             finally:receiver.close()
-            results.append(dict(site=site,session=session,live_messages=live_count,bag_messages=sum(want.values()),counts=summary['counts'],payloads=True,live=True,roundtrip=True,bag_play=True))
+            results.append(dict(site=site,session=session,live_records=live_count,bag_records=sum(want.values()),counts=summary['counts'],payloads=True,live=True,roundtrip=True,bag_play=True))
             (out/'integration.json').write_text(json.dumps(dict(ros_distro=ROS_DISTRO,passed=True,sites=results),indent=2)+'\n')
             print('PASS',site,live_count,flush=True)
     finally:backend.shutdown()

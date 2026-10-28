@@ -38,4 +38,8 @@ else
     --event-handlers console_direct+ "$@" --cmake-args -DPython_EXECUTABLE="$(command -v python3)" -DPython3_EXECUTABLE="$(command -v python3)"
 fi
 printf '\nBuilt for %s. In this same ROS environment:\n  source "%s/install/setup.bash"\n' "$ROS_DISTRO" "$ws"
-printf '  %s/run.sh gui --root /absolute/path/to/ConPRplusplus\n' "$PLAYER_DIR"
+if [[ $flavor == ros1 ]]; then
+  printf '  roslaunch conpr_file_player player.launch root:=/path/to/ConPRplusplus\n'
+else
+  printf '  ros2 launch conpr_file_player player.launch.py root:=/path/to/ConPRplusplus\n'
+fi

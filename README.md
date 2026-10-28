@@ -3,11 +3,45 @@
 A Qt GUI player for **ConPRplusplus**, supporting ROS 1 Noetic and ROS 2 Humble/Jazzy.
 Play LiDAR, camera, IMU and GT data directly from the dataset, or export ROS bags.
 
-## 1. GUI features
+Get the source, then follow the Docker or local instructions below:
+
+```bash
+git clone https://github.com/conprpp/ConPRplusplus.git ConPRplusplus-player
+cd ConPRplusplus-player
+```
+
+## 1. Dataset access and setup
+
+Request the dataset through the [ConPR++ dataset request form](https://forms.gle/JqttMbh4hacAyA6T7).
+Extract the downloaded data to a directory of your choice, keeping this layout:
+
+```text
+ConPRplusplus/
+└── Hall/                       # Office/ and Quad/ use the same layout
+    ├── Calibration/
+    │   ├── camera.yaml
+    │   └── extrinsics.yaml
+    └── 260905/                  # Session ID: YYMMDD
+        ├── LiDAR/<time_ns>.bin
+        ├── Camera/<time_ns>.png
+        ├── IMU/imu.csv
+        ├── GT_pose/poses.csv
+        └── stamps.csv
+```
+
+One site with one session is enough. Keep that site's `Calibration/` alongside
+its session folders, and preserve the supplied filenames and CSV headers.
+
+- **Docker:** from the repository's `docker/` folder, run `bash prepare-host.sh /path/to/ConPRplusplus`
+  before building. This mounts the dataset read-only at `/data/ConPRplusplus`; select that path in the GUI.
+- **Local:** select the dataset folder on your computer in the GUI, or pass
+  `root:=/path/to/ConPRplusplus` when launching, as shown below.
+
+## 2. GUI features
 
 ### Playback controls
 
-Select the dataset root, choose a site/session, click **Load sequence**, then **Play**.
+Select the dataset root (or a site/session folder), choose a session, click **Load sequence**, then **Play**.
 
 | Control | Function |
 |---|---|
@@ -51,23 +85,24 @@ GT poses describe the **IMU**. Frames are `conpr_gt_world`, `conpr_imu`,
 `conpr_lidar` and `conpr_camera_optical`. GT pose/path and GT world TF are optional;
 **Follow GT trajectory** enables both automatically.
 
-## 2. Docker build and run
+## 3. Docker build and run
 
 ### Build
 
 Requires a Linux desktop with Docker Engine, Compose v2 and X11/XWayland.
-Run from the player repository; choose `noetic`, `humble` or `jazzy` below.
+Run from the player repository root; choose `noetic`, `humble` or `jazzy` below.
 
 ```bash
 cd docker
+sudo apt-get update
 sudo apt-get install -y xauth
 bash prepare-host.sh /path/to/ConPRplusplus
 PLAYER_ROS=humble
 sudo docker compose build "$PLAYER_ROS"
 ```
 
-Run `prepare-host.sh` without sudo. In the GUI, the dataset is at
-`/data/ConPRplusplus`. Export to `/exports` to save files in host
+Images are named `conpr-player:noetic`, `conpr-player:humble` and `conpr-player:jazzy`.
+Run `prepare-host.sh` without sudo. Export to `/exports` to save files in host
 `docker/exports/<ROS version>/`.
 
 ### Run once
@@ -110,9 +145,11 @@ sudo docker exec -it "conpr-player-$PLAYER_ROS" bash
 ```
 
 Run `conpr-entrypoint gui` inside again. After updating the player source,
-rebuild the image and recreate the container to use the changes.
+rebuild the image and recreate the container to use the changes. After a new desktop
+login, rerun `prepare-host.sh` before starting; recreate the container if the dataset
+path or display changed.
 
-## 3. Local build and run
+## 4. Local build and run
 
 ### Preparation
 
@@ -150,7 +187,7 @@ ros2 launch conpr_file_player player.launch.py root:=/path/to/ConPRplusplus
 
 In a new terminal, source ROS and the built workspace before launching.
 
-## 4. Essential CLI
+## 5. Essential CLI
 
 After sourcing ROS and the built workspace, play a range without the GUI:
 

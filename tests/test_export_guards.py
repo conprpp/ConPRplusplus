@@ -8,9 +8,8 @@ from conpr_player.bag import export
 from conpr_player.messages import Options
 
 @pytest.fixture
-def ds():
-    root=Path(os.environ.get('CONPR_DATA_ROOT',str(Path(__file__).resolve().parents[3]/'ConPRplusplus')))
-    return Dataset(root/'Hall/260905')
+def ds(data_root):
+    return Dataset(data_root/'Hall/260905')
 
 def destination(tmp_path):return tmp_path/('test.bag' if ROS1 else 'test')
 def sidecar(path):return Path(str(path)+'.conpr_export.json') if ROS1 else path/'conpr_export.json'

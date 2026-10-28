@@ -2,13 +2,12 @@ import csv,json,time,threading,os
 from pathlib import Path
 import numpy as np
 import pytest
-from conpr_player.dataset import Dataset,Event,POINT_DTYPE,load_intervals
+from conpr_player.dataset import Dataset,Event,POINT_DTYPE,load_intervals,discover
 from conpr_player.controller import Playback
 
-ROOT=Path(os.environ.get('CONPR_DATA_ROOT',str(Path(__file__).resolve().parents[3]/'ConPRplusplus')))
 from conpr_player.environment import ROS1
 @pytest.fixture(scope='module')
-def ds():return Dataset(ROOT/'Hall/260905')
+def ds(data_root):return Dataset(data_root/'Hall/260905')
 
 def wait_for(fn,timeout=4):
     end=time.monotonic()+timeout
@@ -18,10 +17,27 @@ def wait_for(fn,timeout=4):
     raise AssertionError('Timeout waiting for condition')
 
 def test_release_format(ds):
-    assert ds.counts=={'livox':2071,'cam':2069,'imu':51762}
+    from collections import Counter
+    with (ds.path/'stamps.csv').open(newline='') as f:
+        rows=list(csv.DictReader(f))
+    assert ds.counts==dict(Counter(row['sensor'] for row in rows))
     assert POINT_DTYPE.itemsize==19
     assert ds.bounds()[1]==len(ds.events)
-    assert ds.gt_values.shape==(2059,7)
+    with (ds.path/'GT_pose/poses.csv').open(newline='') as f:
+        poses=list(csv.DictReader(f))
+    assert ds.gt_values.shape==(len(poses),7)
+
+def test_discovery_accepts_partial_download_and_explicit_folders(data_root,tmp_path):
+    root=tmp_path/'download';site=root/'Hall';site.mkdir(parents=True)
+    (site/'Calibration').symlink_to(data_root/'Hall/Calibration',target_is_directory=True)
+    session=site/'260905';session.mkdir()
+    for child in (data_root/'Hall/260905').iterdir():
+        (session/child.name).symlink_to(child,target_is_directory=child.is_dir())
+    assert discover(root)==[site/'260905']
+    assert discover(site)==[site/'260905']
+    assert discover(session)==[session]
+    assert Dataset(session).counts==Dataset(data_root/'Hall/260905').counts
+    assert discover('')==[]
 
 class Fake:
     start=1_000_000_000;end=2_000_000_000;duration=1.

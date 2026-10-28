@@ -1,5 +1,7 @@
 name: ROS build and player integration
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -26,8 +28,9 @@ jobs:
           apt-get install -y build-essential cmake python3-pytest python3-rosdep xvfb xauth
           if [ "${{ matrix.distro }}" != noetic ]; then apt-get install -y python3-colcon-common-extensions; fi
           source /opt/ros/${{ matrix.distro }}/setup.bash
+          if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi
           rosdep update --include-eol-distros
-          rosdep install --from-paths ${{ matrix.source }} --ignore-src -r -y --rosdistro ${{ matrix.distro }}
+          rosdep install --from-paths ${{ matrix.source }} --ignore-src -y --rosdistro ${{ matrix.distro }}
           ./build.sh
       - name: Synthetic integration (not benchmark data)
         shell: bash
@@ -43,8 +46,7 @@ jobs:
           fi
           python3 tests/make_fixture.py /tmp/fixture
           export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 CONPR_DATA_ROOT=/tmp/fixture
-          python3 -m pytest tests/test_player.py -q -k 'not release_format and not message_payloads_and_tf and not mcap_roundtrip'
-          python3 -m pytest tests/test_export_guards.py -q
+          python3 -m pytest tests/test_player.py tests/test_export_guards.py tests/test_live_gt_tf.py -q
           python3 tests/multiros_probe.py --root /tmp/fixture --output /tmp/probe
           python3 tests/control_probe.py --dataset /tmp/fixture/Hall/260905 --output /tmp/control.json
           xvfb-run -a python3 tests/gui_probe.py --root /tmp/fixture --output /tmp/gui

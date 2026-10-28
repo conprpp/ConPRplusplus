@@ -1,9 +1,11 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>livox_interfaces</name><version>0.0.1</version>
-  <description>Livox official CustomMsg/CustomPoint definitions for offline ConPR++ replay.</description>
-  <maintainer email="dev@livoxtech.com">Livox</maintainer>
+  <description>Livox-compatible CustomMsg/CustomPoint definitions for offline ConPR++ replay.</description>
+  <maintainer email="348353760+conprpp@users.noreply.github.com">conprpp</maintainer>
   <license>MIT</license>
+  <url type="repository">https://github.com/conprpp/ConPRplusplus</url>
+  <url type="bugtracker">https://github.com/conprpp/ConPRplusplus/issues</url>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>rosidl_default_generators</build_depend>
   <depend>std_msgs</depend>

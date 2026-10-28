@@ -2,7 +2,9 @@
 <package format="2">
   <name>livox_ros_driver</name><version>2.6.0</version>
   <description>Message-only Livox definitions for offline replay. No device driver.</description>
-  <maintainer email="dev@livoxtech.com">Livox</maintainer><license>MIT</license>
+  <maintainer email="348353760+conprpp@users.noreply.github.com">conprpp</maintainer><license>MIT</license>
+  <url type="repository">https://github.com/conprpp/ConPRplusplus</url>
+  <url type="bugtracker">https://github.com/conprpp/ConPRplusplus/issues</url>
   <buildtool_depend>catkin</buildtool_depend><build_depend>message_generation</build_depend>
   <depend>std_msgs</depend><exec_depend>message_runtime</exec_depend>
 </package>

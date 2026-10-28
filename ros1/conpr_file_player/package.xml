@@ -3,8 +3,10 @@
   <name>conpr_file_player</name>
   <version>0.2.0</version>
   <description>ConPR++ native Qt dataset player and offline bag exporter.</description>
-  <maintainer email="maintainers@example.org">ConPR++ contributors</maintainer>
+  <maintainer email="348353760+conprpp@users.noreply.github.com">conprpp</maintainer>
   <license>MIT</license>
+  <url type="repository">https://github.com/conprpp/ConPRplusplus</url>
+  <url type="bugtracker">https://github.com/conprpp/ConPRplusplus/issues</url>
   <buildtool_depend>catkin</buildtool_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>std_msgs</exec_depend>

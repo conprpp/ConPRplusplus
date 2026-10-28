@@ -1,4 +1,4 @@
-name: conpr-player-test
+name: conpr-player
 x-player: &player
   user: ubuntu
   init: true
@@ -15,7 +15,7 @@ x-player: &player
 services:
   noetic:
     <<: *player
-    image: conpr-player-test:noetic
+    image: conpr-player:noetic
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -34,7 +34,7 @@ services:
       - ./exports/noetic:/exports
   humble:
     <<: *player
-    image: conpr-player-test:humble
+    image: conpr-player:humble
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -53,7 +53,7 @@ services:
       - ./exports/humble:/exports
   jazzy:
     <<: *player
-    image: conpr-player-test:jazzy
+    image: conpr-player:jazzy
     build:
       context: ..
       dockerfile: docker/Dockerfile

@@ -131,8 +131,10 @@ class Dataset:
         return lo,hi
 
 def discover(root):
+    if not root or not str(root).strip():return []
     root=Path(root).expanduser().resolve()
     if (root/'stamps.csv').exists():return [root]
+    if (root/'Calibration').is_dir():return sorted(p.parent for p in root.glob('*/stamps.csv'))
     return sorted(p.parent for p in root.glob('*/*/stamps.csv'))
 
 def load_intervals(path,duration):
