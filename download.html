@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ConPR++ is a multi-site indoor-outdoor construction dataset for place recognition under progressive structural change.">
+  <meta name="description" content="Request the ConPR++ dataset, explore the folder structure and sensor file formats, and find code release information.">
   <meta name="theme-color" content="#ffffff">
   <title>Download | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css?v=d55bbcade0">
+  <link rel="stylesheet" href="./assets/site.css?v=1628724484">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -18,17 +18,48 @@
       <a href="./index.html">Home</a>
       <a href="./system.html">System</a>
       <a href="./sequences.html">Sequences</a>
-      <a href="./data-format.html">Data Format</a>
-      <a href="./download.html" aria-current="page">Download</a>
       <a href="./benchmark.html">Benchmark</a>
+      <a href="./download.html" aria-current="page">Download</a>
       <a href="./citation.html">Citation</a>
     </nav>
   </div>
 </header>
-<main id="main" class="section-page">
-  <h1>Download</h1>
-  <hr class="section-rule">
-  <p class="release-note">The dataset will be released after acceptance.</p>
+<main id="main" class="section-page content-page download-page">
+  <header class="page-intro">
+    <p class="eyebrow">Dataset and code</p>
+    <h1>Download</h1>
+    <p class="page-lead">22 recording sessions across three construction sites. <a class="inline-link" href="./sequences.html">Explore sequences</a>.</p>
+    <nav class="page-jumps" aria-label="On this page"><a href="#dataset-access">Dataset access</a><a href="#data-format">Data format</a><a href="#code">Code</a></nav>
+  </header>
+
+  <section id="dataset-access" class="content-section" aria-labelledby="access-title">
+    <h2 id="access-title">Dataset access</h2>
+    <p>To request a download link, submit your email address, name, and affiliation using the form below.</p>
+    <div class="download-action">
+      <a class="resource-button" href="https://forms.gle/JqttMbh4hacAyA6T7" target="_blank" rel="noopener noreferrer" aria-label="Download Request Form (opens Google Forms in a new tab)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></svg>Download Request Form</a>
+    </div>
+  </section>
+
+  <section id="data-format" class="content-section" aria-labelledby="format-title">
+    <h2 id="format-title">Data format</h2>
+    <p>Each site contains shared calibration files and date-based recording sessions.</p>
+    <figure class="content-figure format-tree-figure"><a href="./assets/images/format/file-structure.png" target="_blank" rel="noopener" aria-label="Enlarge: ConPR++ directory structure with Hall, Office, Quad, calibration, and LiDAR, camera, IMU, event index and GT pose files"><img class="" src="./assets/images/format/file-structure.png" width="2200" height="1548" loading="lazy" alt="ConPR++ directory structure with Hall, Office, Quad, calibration, and LiDAR, camera, IMU, event index and GT pose files"></a></figure>
+    <p class="format-overview-intro">Session folders use <code>YYMMDD</code> dates. LiDAR and image filenames contain the acquisition timestamp in nanoseconds.</p>
+    <dl class="format-summary">
+      <div id="sensor-files"><dt>LiDAR <span>BIN</span></dt><dd>Individual scans containing XYZ coordinates, reflectivity, tag, line, and point-time offsets.</dd></div>
+      <div><dt>Camera <span>PNG</span></dt><dd>RGB images at 1280 × 720 for Hall and Quad, and 640 × 480 for Office.</dd></div>
+      <div><dt>IMU <span>CSV</span></dt><dd>Timestamped orientation, angular velocity, and acceleration measurements.</dd></div>
+      <div id="poses"><dt>Ground truth <span>CSV</span></dt><dd>Timestamped IMU positions and orientations in a common coordinate frame for each site.</dd></div>
+      <div id="calibration"><dt>Calibration <span>YAML</span></dt><dd>Camera intrinsics and sensor extrinsics, shared by all sessions at each site.</dd></div>
+      <div id="timestamps"><dt>Event index <span>CSV</span></dt><dd><code>stamps.csv</code> lists sensor observations in timestamp order.</dd></div>
+    </dl>
+  </section>
+
+  <section id="code" class="content-section" aria-labelledby="code-title">
+    <h2 id="code-title">Code</h2>
+    <p>The code is being prepared for release.</p>
+    <a class="inline-link" href="https://github.com/conprpp/ConPRplusplus" target="_blank" rel="noopener noreferrer">GitHub repository <span aria-hidden="true">↗</span></a>
+  </section>
 </main>
 <footer class="site-footer"><span>ConPR++</span><span>Place recognition in changing construction environments</span></footer>
 </body>

@@ -3,45 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ConPR++ dataset organization and LiDAR, camera, IMU, ground-truth and calibration file formats.">
-  <meta name="theme-color" content="#ffffff">
   <title>Data Format | ConPR++</title>
-  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css?v=d55bbcade0">
+  <link rel="canonical" href="./download.html#data-format">
+  <script>
+    const formatAnchors = new Set(['#sensor-files', '#poses', '#calibration', '#timestamps']);
+    const destination = formatAnchors.has(window.location.hash) ? window.location.hash : '#data-format';
+    window.location.replace('./download.html' + destination);
+  </script>
+  <noscript><meta http-equiv="refresh" content="0;url=./download.html#data-format"></noscript>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
-<header class="site-header">
-  <div class="nav-shell">
-    <a class="wordmark" href="./index.html" aria-label="ConPR++ home">ConPR<span>++</span></a>
-    <nav class="site-nav" aria-label="Main navigation">
-      <a href="./index.html">Home</a>
-      <a href="./system.html">System</a>
-      <a href="./sequences.html">Sequences</a>
-      <a href="./data-format.html" aria-current="page">Data Format</a>
-      <a href="./download.html">Download</a>
-      <a href="./benchmark.html">Benchmark</a>
-      <a href="./citation.html">Citation</a>
-    </nav>
-  </div>
-</header>
-<main id="main" class="section-page content-page format-page format-overview">
-  <header class="page-intro">
-    <p class="eyebrow">Dataset organization</p>
-    <h1>Data Format</h1>
-    <p class="page-lead">Each site contains shared calibration files and date-based recording sessions.</p>
-  </header>
-  <figure class="content-figure format-tree-figure"><a href="./assets/images/format/file-structure.png" target="_blank" rel="noopener" aria-label="Enlarge: ConPR++ directory structure with Hall, Office, Quad, calibration, and LiDAR, camera, IMU, event index and GT pose files"><img class="" src="./assets/images/format/file-structure.png" width="2200" height="1548" loading="lazy" alt="ConPR++ directory structure with Hall, Office, Quad, calibration, and LiDAR, camera, IMU, event index and GT pose files"></a></figure>
-  <p class="format-overview-intro">Session folders use <code>YYMMDD</code> dates. LiDAR and image filenames contain the acquisition timestamp in nanoseconds.</p>
-  <dl class="format-summary">
-    <div id="sensor-files"><dt>LiDAR <span>BIN</span></dt><dd>Individual scans containing XYZ coordinates, reflectivity, tag, line, and point-time offsets.</dd></div>
-    <div><dt>Camera <span>PNG</span></dt><dd>RGB images at 1280 × 720 for Hall and Quad, and 640 × 480 for Office.</dd></div>
-    <div><dt>IMU <span>CSV</span></dt><dd>Timestamped orientation, angular velocity, and acceleration measurements.</dd></div>
-    <div id="poses"><dt>Ground truth <span>CSV</span></dt><dd>Timestamped IMU positions and orientations in a common coordinate frame for each site.</dd></div>
-    <div id="calibration"><dt>Calibration <span>YAML</span></dt><dd>Camera intrinsics and sensor extrinsics, shared by all sessions at each site.</dd></div>
-    <div id="timestamps"><dt>Event index <span>CSV</span></dt><dd><code>stamps.csv</code> lists sensor observations in timestamp order.</dd></div>
-  </dl>
-</main>
-<footer class="site-footer"><span>ConPR++</span><span>Place recognition in changing construction environments</span></footer>
+  <p>Data format information has moved to the <a href="./download.html#data-format">Download page</a>.</p>
 </body>
 </html>

@@ -336,7 +336,7 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 /* Concise dataset overview and paper-style benchmark results */
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .format-tree-figure { max-width: 850px; margin: 32px auto; }
-.format-overview-intro { margin: 28px 0; font-size: 15px; }
+.content-section .format-overview-intro { margin: 28px 0; font-size: 15px; }
 .format-summary { display: grid; grid-template-columns: 1fr 1fr; column-gap: 42px; margin: 0; }
 .format-summary > div { border-top: 1px solid var(--line); padding: 18px 0; scroll-margin-top: 118px; }
 .format-summary dt { font-size: 17px; font-weight: 650; color: var(--ink); }
@@ -364,6 +364,7 @@ select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .benchmark-plot-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; margin-top: 32px; }
 .benchmark-plot-pair h3 { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; margin-bottom: 16px; }
 .benchmark-plot-pair .figure-site { font-size: 12px; font-weight: 500; color: var(--muted); }
+.download-action { margin-top: 26px; }
 @media (max-width: 700px) {
   .format-tree-figure { margin: 24px auto; }
   .format-summary, .benchmark-plot-pair { grid-template-columns: 1fr; }
