@@ -168,10 +168,15 @@ h2 { font-size: 30px; line-height: 1.3; letter-spacing: -.5px; font-weight: 700;
 .site-facts > div { margin-bottom: 14px; }
 .site-facts dt { color: #7b8592; font-size: 11px; margin-bottom: 2px; }
 .site-facts dd { margin: 0; color: #354255; font-weight: 550; font-variant-numeric: tabular-nums; }
-.sample-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; }
-.sample-strip figcaption { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; }
-.sample-strip figcaption strong { color: #414d5d; font-size: 12px; }
-.sample-strip figcaption span { margin-left: auto; font-size: 10px; color: #8390a1; }
+.temporal-comparison { margin-top: 32px; }
+.session-comparison-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.session-comparison { min-width: 0; }
+.session-comparison-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; border-top: 2px solid #dce4ed; padding-top: 12px; margin-bottom: 16px; font-variant-numeric: tabular-nums; }
+.session-comparison-heading h4 { margin: 0; color: var(--ink); font-size: 17px; font-weight: 650; line-height: 1.5; }
+.session-comparison-heading time { font-size: 12px; color: #657080; }
+.session-comparison-heading .time-tag { margin-left: auto; }
+.session-comparison .content-figure + .content-figure { margin-top: 18px; }
+.session-comparison .content-figure figcaption { margin: 0 0 8px; font-size: 11px; font-weight: 550; color: #657080; }
 .session-table { min-width: 680px; }
 .time-tag { font-size: 11px; color: #6b7685; }
 .time-tag.is-night { color: #435f94; background: #edf1f8; border-radius: 3px; padding: 3px 7px; }
@@ -217,9 +222,8 @@ h2 { font-size: 30px; line-height: 1.3; letter-spacing: -.5px; font-weight: 700;
   .site-facts { padding: 18px 0 0; border-left: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .site-facts > div { margin-bottom: 0; }
   .site-facts > div:first-child { grid-column: 1 / -1; }
-  .sample-strip { grid-template-columns: 1fr; gap: 22px; }
-  .sample-strip img { max-width: 528px; margin: 0 auto; }
-  .sample-strip figcaption { max-width: 528px; margin-left: auto; margin-right: auto; }
+  .session-comparison-grid { grid-template-columns: 1fr; gap: 30px; }
+  .session-comparison { max-width: 528px; width: 100%; margin: 0 auto; }
   .data-table th, .data-table td { padding: 11px 13px; }
   .table-wrap { margin-top: 24px; }
   .content-section .figure-note, .content-section .table-note { font-size: 11px; }

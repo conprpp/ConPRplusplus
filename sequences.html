@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore 22 ConPR++ recording sessions across Hall, Office, and Quad, with maps, trajectories, RGB examples, and session statistics.">
+  <meta name="description" content="Explore 22 ConPR++ recording sessions across Hall, Office, and Quad, with maps, trajectories, paired camera and LiDAR views, and session statistics.">
   <meta name="theme-color" content="#ffffff">
   <title>Sequences | ConPR++</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./assets/site.css?v=1628724484">
+  <link rel="stylesheet" href="./assets/site.css?v=5fd6f94d15">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -76,12 +76,44 @@
         <div><dt>Images</dt><dd>12,032</dd></div>
       </dl>
     </div>
-    <div class="sample-strip">
-      <figure class="content-figure"><a href="./assets/images/sequences/hall-01.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Hall, session 01"><img src="./assets/images/sequences/hall-01.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Hall, session 01, recorded during the day on 2026-09-05."></a><figcaption><strong>01</strong><time datetime="2026-09-05">2026-09-05</time><span>Day</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/hall-03.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Hall, session 03"><img src="./assets/images/sequences/hall-03.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Hall, session 03, recorded during the night on 2026-09-14."></a><figcaption><strong>03</strong><time datetime="2026-09-14">2026-09-14</time><span>Night</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/hall-05.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Hall, session 05"><img src="./assets/images/sequences/hall-05.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Hall, session 05, recorded during the day on 2026-09-22."></a><figcaption><strong>05</strong><time datetime="2026-09-22">2026-09-22</time><span>Day</span></figcaption></figure>
-    </div>
-    <p class="figure-note">Representative observations from selected sessions; viewpoints may differ between images.</p>
+    <section class="temporal-comparison" aria-labelledby="hall-changes">
+      <h3 id="hall-changes">Changes across sessions</h3>
+      <div class="session-comparison-grid">
+        <article class="session-comparison" aria-label="Hall, session 01, 2026-09-05">
+          <header class="session-comparison-heading"><h4>01</h4><time datetime="2026-09-05">2026-09-05</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-01-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Hall, session 01"><img src="./assets/images/sequences/temporal/hall-01-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Hall, session 01, recorded on 2026-09-05."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-01-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Hall, session 01"><img src="./assets/images/sequences/temporal/hall-01-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Hall, session 01, recorded on 2026-09-05."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Hall, session 03, 2026-09-14">
+          <header class="session-comparison-heading"><h4>03</h4><time datetime="2026-09-14">2026-09-14</time><span class="time-tag is-night">Night</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-03-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Hall, session 03"><img src="./assets/images/sequences/temporal/hall-03-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Hall, session 03, recorded on 2026-09-14."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-03-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Hall, session 03"><img src="./assets/images/sequences/temporal/hall-03-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Hall, session 03, recorded on 2026-09-14."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Hall, session 05, 2026-09-22">
+          <header class="session-comparison-heading"><h4>05</h4><time datetime="2026-09-22">2026-09-22</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-05-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Hall, session 05"><img src="./assets/images/sequences/temporal/hall-05-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Hall, session 05, recorded on 2026-09-22."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/hall-05-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Hall, session 05"><img src="./assets/images/sequences/temporal/hall-05-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Hall, session 05, recorded on 2026-09-22."></a>
+          </figure>
+        </article>
+      </div>
+    </section>
     <div class="table-wrap" role="region" aria-label="Hall recording sessions" tabindex="0">
       <table class="data-table session-table">
         <caption>Hall recording sessions</caption>
@@ -113,12 +145,44 @@
         <div><dt>Images</dt><dd>137,178</dd></div>
       </dl>
     </div>
-    <div class="sample-strip">
-      <figure class="content-figure"><a href="./assets/images/sequences/office-01.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Office, session 01"><img src="./assets/images/sequences/office-01.png" width="400" height="300" loading="lazy" alt="Representative RGB observation from Office, session 01, recorded during the day on 2023-05-31."></a><figcaption><strong>01</strong><time datetime="2023-05-31">2023-05-31</time><span>Day</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/office-07.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Office, session 07"><img src="./assets/images/sequences/office-07.png" width="400" height="300" loading="lazy" alt="Representative RGB observation from Office, session 07, recorded during the day on 2023-07-06."></a><figcaption><strong>07</strong><time datetime="2023-07-06">2023-07-06</time><span>Day</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/office-12.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Office, session 12"><img src="./assets/images/sequences/office-12.png" width="400" height="300" loading="lazy" alt="Representative RGB observation from Office, session 12, recorded during the day on 2023-08-18."></a><figcaption><strong>12</strong><time datetime="2023-08-18">2023-08-18</time><span>Day</span></figcaption></figure>
-    </div>
-    <p class="figure-note">Representative observations from selected sessions; viewpoints may differ between images.</p>
+    <section class="temporal-comparison" aria-labelledby="office-changes">
+      <h3 id="office-changes">Changes across sessions</h3>
+      <div class="session-comparison-grid">
+        <article class="session-comparison" aria-label="Office, session 03, 2023-06-11">
+          <header class="session-comparison-heading"><h4>03</h4><time datetime="2023-06-11">2023-06-11</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/office-03-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Office, session 03"><img src="./assets/images/sequences/temporal/office-03-camera.png" width="640" height="480" loading="lazy" alt="Camera image from Office, session 03, recorded on 2023-06-11."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/office-03-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Office, session 03"><img src="./assets/images/sequences/temporal/office-03-bev.png" width="640" height="480" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Office, session 03, recorded on 2023-06-11."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Office, session 11, 2023-08-13">
+          <header class="session-comparison-heading"><h4>11</h4><time datetime="2023-08-13">2023-08-13</time><span class="time-tag is-night">Night</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/office-11-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Office, session 11"><img src="./assets/images/sequences/temporal/office-11-camera.png" width="640" height="480" loading="lazy" alt="Camera image from Office, session 11, recorded on 2023-08-13."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/office-11-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Office, session 11"><img src="./assets/images/sequences/temporal/office-11-bev.png" width="640" height="480" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Office, session 11, recorded on 2023-08-13."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Office, session 12, 2023-08-18">
+          <header class="session-comparison-heading"><h4>12</h4><time datetime="2023-08-18">2023-08-18</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/office-12-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Office, session 12"><img src="./assets/images/sequences/temporal/office-12-camera.png" width="640" height="480" loading="lazy" alt="Camera image from Office, session 12, recorded on 2023-08-18."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/office-12-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Office, session 12"><img src="./assets/images/sequences/temporal/office-12-bev.png" width="640" height="480" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Office, session 12, recorded on 2023-08-18."></a>
+          </figure>
+        </article>
+      </div>
+    </section>
     <div class="table-wrap" role="region" aria-label="Office recording sessions" tabindex="0">
       <table class="data-table session-table">
         <caption>Office recording sessions</caption>
@@ -157,12 +221,44 @@
         <div><dt>Images</dt><dd>18,946</dd></div>
       </dl>
     </div>
-    <div class="sample-strip">
-      <figure class="content-figure"><a href="./assets/images/sequences/quad-01.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Quad, session 01"><img src="./assets/images/sequences/quad-01.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Quad, session 01, recorded during the day on 2026-09-17."></a><figcaption><strong>01</strong><time datetime="2026-09-17">2026-09-17</time><span>Day</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/quad-03.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Quad, session 03"><img src="./assets/images/sequences/quad-03.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Quad, session 03, recorded during the day on 2026-09-22."></a><figcaption><strong>03</strong><time datetime="2026-09-22">2026-09-22</time><span>Day</span></figcaption></figure>
-      <figure class="content-figure"><a href="./assets/images/sequences/quad-05.png" target="_blank" rel="noopener" aria-label="Enlarge the RGB sample for Quad, session 05"><img src="./assets/images/sequences/quad-05.png" width="528" height="297" loading="lazy" alt="Representative RGB observation from Quad, session 05, recorded during the day on 2026-10-06."></a><figcaption><strong>05</strong><time datetime="2026-10-06">2026-10-06</time><span>Day</span></figcaption></figure>
-    </div>
-    <p class="figure-note">Representative observations from selected sessions; viewpoints may differ between images.</p>
+    <section class="temporal-comparison" aria-labelledby="quad-changes">
+      <h3 id="quad-changes">Changes across sessions</h3>
+      <div class="session-comparison-grid">
+        <article class="session-comparison" aria-label="Quad, session 02, 2026-09-18">
+          <header class="session-comparison-heading"><h4>02</h4><time datetime="2026-09-18">2026-09-18</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-02-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Quad, session 02"><img src="./assets/images/sequences/temporal/quad-02-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Quad, session 02, recorded on 2026-09-18."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-02-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Quad, session 02"><img src="./assets/images/sequences/temporal/quad-02-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Quad, session 02, recorded on 2026-09-18."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Quad, session 04, 2026-09-29">
+          <header class="session-comparison-heading"><h4>04</h4><time datetime="2026-09-29">2026-09-29</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-04-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Quad, session 04"><img src="./assets/images/sequences/temporal/quad-04-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Quad, session 04, recorded on 2026-09-29."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-04-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Quad, session 04"><img src="./assets/images/sequences/temporal/quad-04-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Quad, session 04, recorded on 2026-09-29."></a>
+          </figure>
+        </article>
+        <article class="session-comparison" aria-label="Quad, session 05, 2026-10-06">
+          <header class="session-comparison-heading"><h4>05</h4><time datetime="2026-10-06">2026-10-06</time><span class="time-tag">Day</span></header>
+          <figure class="content-figure">
+            <figcaption>Camera</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-05-camera.png" target="_blank" rel="noopener" aria-label="Enlarge Camera for Quad, session 05"><img src="./assets/images/sequences/temporal/quad-05-camera.png" width="1280" height="720" loading="lazy" alt="Camera image from Quad, session 05, recorded on 2026-10-06."></a>
+          </figure>
+          <figure class="content-figure">
+            <figcaption>LiDAR (BEV)</figcaption>
+            <a href="./assets/images/sequences/temporal/quad-05-bev.png" target="_blank" rel="noopener" aria-label="Enlarge LiDAR (BEV) for Quad, session 05"><img src="./assets/images/sequences/temporal/quad-05-bev.png" width="1280" height="720" loading="lazy" alt="Bird’s-eye view of the LiDAR point cloud from Quad, session 05, recorded on 2026-10-06."></a>
+          </figure>
+        </article>
+      </div>
+    </section>
     <div class="table-wrap" role="region" aria-label="Quad recording sessions" tabindex="0">
       <table class="data-table session-table">
         <caption>Quad recording sessions</caption>
