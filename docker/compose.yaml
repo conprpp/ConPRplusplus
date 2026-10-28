@@ -1,0 +1,76 @@
+name: conpr-player-test
+x-player: &player
+  user: ubuntu
+  init: true
+  environment: &environment
+    DISPLAY: "${PLAYER_DISPLAY:?Run prepare-host.sh from the host desktop}"
+    XAUTHORITY: /tmp/conpr.xauth
+    QT_QPA_PLATFORM: xcb
+    QT_X11_NO_MITSHM: "1"
+    HOME: /home/ubuntu
+    CONPR_RVIZ_SOFTWARE: "1"
+  working_dir: /exports
+  shm_size: 512m
+  stop_grace_period: 15s
+services:
+  noetic:
+    <<: *player
+    image: conpr-player-test:noetic
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_IMAGE: ros:noetic-ros-base-focal
+        LOCAL_UID: "${LOCAL_UID:?Run prepare-host.sh}"
+        LOCAL_GID: "${LOCAL_GID:?Run prepare-host.sh}"
+    networks: [noetic]
+    environment:
+      <<: *environment
+      ROS_MASTER_URI: http://localhost:11311
+    volumes:
+      - "${CONPR_DATASET:?Run prepare-host.sh}:/data/ConPRplusplus:ro"
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ./.runtime/xauthority:/tmp/conpr.xauth:ro
+      - ./exports/noetic:/exports
+  humble:
+    <<: *player
+    image: conpr-player-test:humble
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_IMAGE: ros:humble-ros-base-jammy
+        LOCAL_UID: "${LOCAL_UID:?Run prepare-host.sh}"
+        LOCAL_GID: "${LOCAL_GID:?Run prepare-host.sh}"
+    networks: [humble]
+    environment:
+      <<: *environment
+      ROS_DOMAIN_ID: "84"
+    volumes:
+      - "${CONPR_DATASET:?Run prepare-host.sh}:/data/ConPRplusplus:ro"
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ./.runtime/xauthority:/tmp/conpr.xauth:ro
+      - ./exports/humble:/exports
+  jazzy:
+    <<: *player
+    image: conpr-player-test:jazzy
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_IMAGE: ros:jazzy-ros-base-noble
+        LOCAL_UID: "${LOCAL_UID:?Run prepare-host.sh}"
+        LOCAL_GID: "${LOCAL_GID:?Run prepare-host.sh}"
+    networks: [jazzy]
+    environment:
+      <<: *environment
+      ROS_DOMAIN_ID: "85"
+    volumes:
+      - "${CONPR_DATASET:?Run prepare-host.sh}:/data/ConPRplusplus:ro"
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ./.runtime/xauthority:/tmp/conpr.xauth:ro
+      - ./exports/jazzy:/exports
+networks:
+  noetic: {}
+  humble: {}
+  jazzy: {}

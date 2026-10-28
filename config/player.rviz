@@ -1,0 +1,63 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ''
+  Global Options:
+    Background Color: 22; 30; 43
+    Fixed Frame: conpr_lidar
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 30
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Livox
+      Enabled: true
+      Topic:
+        Value: /livox/points
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        Depth: 10
+      Style: Points
+      Size (Pixels): 2
+      Color Transformer: Intensity
+      Channel Name: intensity
+      Position Transformer: XYZ
+      Decay Time: 0
+    - Class: rviz_default_plugins/Image
+      Name: RGB
+      Enabled: true
+      Topic:
+        Value: /camera/color/image_raw
+        Reliability Policy: Reliable
+        Durability Policy: Volatile
+        Depth: 5
+    - Class: rviz_default_plugins/Path
+      Name: GT trajectory (enable GT world TF; Fixed Frame conpr_gt_world)
+      Enabled: false
+      Topic:
+        Value: /conpr/gt/path
+        Reliability Policy: Reliable
+        Durability Policy: Transient Local
+        Depth: 1
+      Color: 255; 165; 60
+      Line Style: Lines
+      Line Width: 0.05
+    - Class: rviz_default_plugins/TF
+      Name: Frames
+      Enabled: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 18
+      Pitch: 0.65
+      Yaw: 0.8
+      Target Frame: conpr_lidar
+Window Geometry:
+  Width: 1100
+  Height: 750

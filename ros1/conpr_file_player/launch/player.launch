@@ -1,0 +1,12 @@
+<launch>
+  <arg name="root" default="" />
+  <arg name="dataset" default="" />
+  <arg name="mode" default="gui" />
+  <arg name="start" default="0" />
+  <arg name="end" default="0" />
+  <arg name="rate" default="1" />
+  <arg name="options" default="" doc="Additional CLI flags, e.g. --gt --custom --loop" />
+  <param name="use_sim_time" value="true" />
+  <node pkg="conpr_file_player" type="player" name="conpr_file_player" output="screen"
+        args="$(arg mode) --root '$(arg root)' --dataset '$(arg dataset)' --start $(arg start) --end $(arg end) --rate $(arg rate) $(arg options)" />
+</launch>

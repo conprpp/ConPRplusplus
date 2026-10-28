@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>conpr_file_player</name>
+  <version>0.2.0</version>
+  <description>ConPR++ native Qt dataset player and offline bag exporter.</description>
+  <maintainer email="maintainers@example.org">ConPR++ contributors</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>rosgraph_msgs</exec_depend>
+  <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>rosbag</exec_depend>
+  <exec_depend>livox_ros_driver</exec_depend>
+  <exec_depend>python3-rospkg</exec_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rviz</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-yaml</exec_depend>
+  <exec_depend>python3-pil</exec_depend>
+  <exec_depend>python3-pyqt5</exec_depend>
+  <export><build_type>catkin</build_type></export>
+</package>

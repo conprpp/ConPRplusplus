@@ -1,0 +1,15 @@
+workspaces/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+devel/
+install/
+log/
+docker/.env
+docker/.runtime/
+docker/exports/

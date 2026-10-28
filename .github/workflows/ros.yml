@@ -1,0 +1,50 @@
+name: ROS build and player integration
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - distro: noetic
+            image: ros:noetic-ros-base-focal
+            source: ros1
+          - distro: humble
+            image: ros:humble-ros-base-jammy
+            source: ros2
+          - distro: jazzy
+            image: ros:jazzy-ros-base-noble
+            source: ros2
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies and build
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y build-essential cmake python3-pytest python3-rosdep xvfb xauth
+          if [ "${{ matrix.distro }}" != noetic ]; then apt-get install -y python3-colcon-common-extensions; fi
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          rosdep update --include-eol-distros
+          rosdep install --from-paths ${{ matrix.source }} --ignore-src -r -y --rosdistro ${{ matrix.distro }}
+          ./build.sh
+      - name: Synthetic integration (not benchmark data)
+        shell: bash
+        run: |
+          source /opt/ros/${{ matrix.distro }}/setup.bash
+          source workspaces/${{ matrix.distro }}/install/setup.bash
+          export ROS_DOMAIN_ID=88 ROS_MASTER_URI=http://localhost:11387
+          if [ "$ROS_VERSION" = 1 ]; then
+            roscore -p 11387 > /tmp/roscore.log 2>&1 &
+            master_pid=$!
+            trap 'kill "$master_pid" 2>/dev/null || true' EXIT
+            sleep 3
+          fi
+          python3 tests/make_fixture.py /tmp/fixture
+          export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 CONPR_DATA_ROOT=/tmp/fixture
+          python3 -m pytest tests/test_player.py -q -k 'not release_format and not message_payloads_and_tf and not mcap_roundtrip'
+          python3 -m pytest tests/test_export_guards.py -q
+          python3 tests/multiros_probe.py --root /tmp/fixture --output /tmp/probe
+          python3 tests/control_probe.py --dataset /tmp/fixture/Hall/260905 --output /tmp/control.json
+          xvfb-run -a python3 tests/gui_probe.py --root /tmp/fixture --output /tmp/gui
